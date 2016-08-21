@@ -110,7 +110,7 @@ All filters need to match to a node for it to be selected.
 .PP
 Filters are specified with the syntax
 .I field op value
-without delimiting characters or by specifying the arguments
+in a single argument without delimiting characters or by specifying the arguments
 .B \-e
 .IR "field op value" .
 .I field
@@ -264,7 +264,7 @@ exits on success, so the exit status is always 0 unless an error occurred.
 .B i3\-match \-t
 Print a simple hierarchy tree with names for each container.
 .TP
-.B i3\-match 'name=*Firefox' \-l 2 && echo true
+.B i3\-match 'name*=Firefox' \-l 2 && echo true
 Print "true" when there are at least two containers with titles
 containing "Firefox".
 .TP

@@ -220,10 +220,10 @@ only makes a visual difference when specifying
 twice.
 .sp
 When filters are specified such that no event types would match,
-.B i3-match
+.B i3\-match
 exits with an error message.
 .sp
-"none" in match-mode.
+"none" in match\-mode.
 .TP
 .B :nodei
 Index of this node.
@@ -260,19 +260,19 @@ In subscribe\-mode
 exits on success, so the exit status is always 0 unless an error occurred.
 .SH EXAMPLES
 .TP
-.B i3-match -t
+.B i3\-match \-t
 Print a simple hierarchy tree with names for each container.
 .TP
-.B i3-match 'name=*Firefox' -l 2 && echo true
+.B i3\-match 'name=*Firefox' \-l 2 && echo true
 Print "true" when there are at least two containers with titles
 containing "Firefox".
 .TP
-.B i3-match focused=true -a -h -o :itree rect/{width,height} name
+.B i3\-match focused=true \-a \-h \-o :itree rect/{width,height} name
 Print width, height and title for each window and container.
 Highlight the focused window.
 .TP
-.B i3-match -S :evtype=window change=new
+.B i3\-match \-S :evtype=window change=new
 Wait for a window to be created, then exit.
 .TP
-.B i3-match -Sm :evtype=window container/focused=true -o container/name
+.B i3\-match \-Sm :evtype=window container/focused=true \-o container/name
 Print the name of the focused window every time it changes.

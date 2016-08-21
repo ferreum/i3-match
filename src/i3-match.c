@@ -148,11 +148,11 @@ static void push_value(string_builder *sb, const char* key,
         if (ctx->pt_context.output) {
             sb_pushf(sb, "%s", ctx->pt_context.output);
         }
-    } else if (strcmp(":nodei", key) == 0) {
+    } else if (strcmp(":sibi", key) == 0) {
         sb_pushf(sb, "%d", info->nodei);
-    } else if (strcmp(":nodec", key) == 0) {
+    } else if (strcmp(":sibc", key) == 0) {
         sb_pushf(sb, "%d", info->nodec);
-    } else if (strcmp(":subnodec", key) == 0) {
+    } else if (strcmp(":childc", key) == 0) {
         sb_pushf(sb, "%d", info->subnodec);
     } else if (strcmp(":indent", key) == 0) {
         const char *str = match ? "--" : "  ";
@@ -185,7 +185,7 @@ static void push_value(string_builder *sb, const char* key,
         } else {
             sb_pushn(sb, "none", 4);
         }
-    } else if (strcmp(":objc", key) == 0) {
+    } else if (strcmp(":nodei", key) == 0) {
         sb_pushf(sb, "%d", ctx->objcount);
     } else if (strcmp(":matchc", key) == 0) {
         sb_pushf(sb, "%d", ctx->matchcount);

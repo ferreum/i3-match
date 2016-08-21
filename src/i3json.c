@@ -15,13 +15,13 @@ struct operator {
 
 static const struct operator OPERATORS[] = {
     {"==", 2, MT_EQUALS},
-    {"=^", 2, MT_STARTS},
-    {"=$", 2, MT_ENDS},
-    {"=*", 2, MT_CONTAINS},
+    {"^=", 2, MT_STARTS},
+    {"$=", 2, MT_ENDS},
+    {"*=", 2, MT_CONTAINS},
     {"=", 1, MT_EQUALS},
-    {"!=^", 3, MT_STARTS | MT_NOT},
-    {"!=$", 3, MT_ENDS | MT_NOT},
-    {"!=*", 3, MT_CONTAINS | MT_NOT},
+    {"!^=", 3, MT_STARTS | MT_NOT},
+    {"!$=", 3, MT_ENDS | MT_NOT},
+    {"!*=", 3, MT_CONTAINS | MT_NOT},
     {"!=", 2, MT_EQUALS | MT_NOT},
 };
 

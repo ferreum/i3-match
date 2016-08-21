@@ -78,6 +78,10 @@ int i3ipc_open_socket(const char *path) {
     if (!path) {
         path = i3ipc_get_sockpath(&a_path);
     }
+    if (!path) {
+        fprintf(stderr, "could not find socket\n");
+        return -1;
+    }
 
     struct sockaddr_un remote;
     int s;

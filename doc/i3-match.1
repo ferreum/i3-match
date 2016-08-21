@@ -39,7 +39,7 @@ field are left out.
 .BI \-d " delimiter"
 Set the current delimiter. Default is space (' ').
 .TP
-.BI \-e " field op value
+.BI \-e " field op value"
 Specify a filter with three following arguments. See
 .B FILTERS
 below.
@@ -128,19 +128,19 @@ Matches when the value of
 is exactly
 .IR value .
 .TP
-.B =*
+.B *=
 Matches when the value of
 .I field
 contains
 .IR value .
 .TP
-.B =^
+.B ^=
 Matches when the value of
 .I field
 starts with
 .IR value .
 .TP
-.B =$
+.B $=
 Matches when the value of
 .I field
 ends with
@@ -242,6 +242,7 @@ formatted without newlines. See
 .B FIELDS
 above for
 .IR field .
+Pseudo fields are not available here.
 .SH "ENVIRONMENT VARIABLES"
 .TP
 .B I3_SOCKET

@@ -14,7 +14,6 @@ struct operator {
 };
 
 static const struct operator OPERATORS[] = {
-    {"==", 2, MT_EQUALS},
     {"^=", 2, MT_STARTS},
     {"$=", 2, MT_ENDS},
     {"*=", 2, MT_CONTAINS},

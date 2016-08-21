@@ -1,0 +1,278 @@
+.TH I3\-MATCH 1
+.SH NAME
+i3\-match \- access to i3 window manager's IPC interface
+.SH SYNOPSIS
+.B i3\-match
+.RB [ \-S ]
+.RI [ option | filter ]...
+.RB [ \-o " \fIfield" \fR...]
+.SH DESCRIPTION
+.B i3\-match
+provides command\-line access to i3 window manager's IPC (interprocess
+communication) interface.
+.PP
+.B i3\-match
+has two modes of operation: match\-mode and subscribe\-mode.
+.PP
+In both modes, filters are used to select nodes.
+.PP
+Match\-mode is the default. In this mode nodes are containers/windows in
+i3's layout tree.
+.PP
+The option
+.B \-S
+enters subscribe\-mode. Here, nodes are events received via
+i3's subscribe feature.
+.SH OPTIONS
+.TP
+.B \-a
+Print unmatched nodes too. Output the
+.B :match
+field or specify
+.B \-h
+to highlight matches.
+If specified twice in subscribe mode ("almost all"), events not matching
+filters for the
+.B :evtype
+field are left out.
+.TP
+.BI \-d " delimiter"
+Set the current delimiter. Default is space (' ').
+.TP
+.BI \-e " field op value
+Specify a filter with three following arguments. See
+.B FILTERS
+below.
+.TP
+.B \-h
+Highlight matches. Useful with
+.BR \-a .
+.TP
+.BI \-i " file"
+Read json tree from
+.I file
+instead of querying via i3 IPC. If
+.I file
+is "\-" read from stdin. Match\-mode only.
+.TP
+.BI \-l " num"
+Consider success after
+.I num
+matches. Default is 1. Match\-mode only (see also
+.BR \-n ).
+.TP
+.B \-m
+Keep monitoring for events infinitely. Specifying
+.B \-n
+after this option overrides this effect. Sets printed fields to
+.B ":evtype change current/name container/name binding/command"
+unless
+.B \-o
+is given.
+Subscribe\-mode only.
+.TP
+.BI \-n " num"
+In match\-mode: Exit after printing
+.I num
+nodes. If no output fields are selected, this option is ignored (you may want
+.B \-l
+instead).
+In subscribe\-mode: exit after matching
+.I num
+nodes.
+.TP
+.BI \-o " field" \fR...
+Print the values of given fields for each matched node. Printed values are
+separated by the current delimiter
+.RB "(see " \-d ).
+All arguments following this option are treated as field names.
+.TP
+.B \-S
+Enter subscribe\-mode. This may not be specified after mode\-specific options.
+.TP
+.BI \-s " path"
+Specify the path of the i3 socket to use. By default, uses the socket of the
+i3 instance of the current display.
+.TP
+.B \-t
+Same as
+.BR "\-o :itree name" .
+If both
+.B \-t
+and
+.B \-o
+are given,
+.B \-t
+is ignored. Match\-mode only.
+.SH FILTERS
+Filters are conditions applied to each node to choose which nodes to select.
+All filters need to match to a node for it to be selected.
+.PP
+Filters are specified with the syntax
+.I field op value
+without delimiting characters or by specifying the arguments
+.B \-e
+.IR "field op value" .
+.I field
+is the name of any field (see
+.B FIELDS
+below).
+.I value
+is the string to match against.
+.I op
+is any of the following operators:
+.TP
+.B =
+Matches when the value of
+.I field
+is exactly
+.IR value .
+.TP
+.B =*
+Matches when the value of
+.I field
+contains
+.IR value .
+.TP
+.B =^
+Matches when the value of
+.I field
+starts with
+.IR value .
+.TP
+.B =$
+Matches when the value of
+.I field
+ends with
+.IR value .
+.PP
+The meaning of any operator can be inverted by prefixing it with
+exclamation mark
+.RB ( ! ).
+.SH FIELDS
+Fields contain values for each node. They are accessed via their names in
+the json\-structure of each node.
+.PP
+Hierarchies of json objects are accessed using slashes
+.RB ( / )
+as separator.
+.PP
+Fields not found for a node are empty. There is no check for whether a field
+name is valid.
+.PP
+See i3 IPC documentation (https://i3wm.org/docs/ipc.html) for a list of fields.
+.SS "Pseudo fields"
+.B i3\-match
+provides additional information for each node. Pseudo\-fields access this
+information. All pseudo\-fields start with colon
+.RB ( : ).
+.TP
+.B :match
+1, if this node is a match. 0 otherwise. 0 when used in a filter.
+.TP
+.B :level
+Nesting level of this node in i3's layout tree. 0 for the root node.
+0 in subscribe\-mode.
+.TP
+.B :floating
+1, if this node is contained in a floating_nodes array. Increments by 1 for
+each nesting level inside such a node. 0 in subscribe\-mode.
+.TP
+.B :scratch
+1, if this node's scratchpad_state is not none. Increments by 1 for each
+nesting level inside such a node. 0 in subscribe\-mode.
+.TP
+.B :workspace
+Name of the workspace containing this node. Empty if this node is not
+contained by a workspace. Empty in subscribe\-mode.
+.TP
+.B :output
+Name of the output (screen) containing this node. Empty if this node
+is not contained by an output. Empty in subscribe\-mode.
+.TP
+.B :sibi
+Index of this node within the current list of siblings.
+0 in subscribe\-mode.
+.TP
+.B :sibc
+Number of siblings of this node. 0 in subscribe\-mode.
+.TP
+.B :childc
+Number of children of this node. 0 in subscribe\-mode.
+.TP
+.B :indent
+Outputs an indented hierarchy tree. Matched nodes are indented with
+dashes ('\-\-') other nodes with spaces ('  '). Only useful in match\-mode.
+.TP
+.B :itree
+Outputs an indented hierarchy resembling the output of
+.BR tree (1).
+Only useful in match\-mode.
+.TP
+.B :evtype
+Event type in subscribe\-mode. One of
+.BR workspace ", " output ", " mode ", " window ", " barconfig_update ", " binding .
+.sp
+This field is special when used in filters in subscribe\-mode. These filters
+are used to decide which events to subscribe for. This an optimization and
+only makes a visual difference when specifying
+.B \-a
+twice.
+.sp
+When filters are specified such that no event types would match,
+.B i3-match
+exits with an error message.
+.sp
+"none" in match-mode.
+.TP
+.B :nodei
+Index of this node.
+.TP
+.B :matchc
+Current number of matches up to this point. This is incremented after
+a node is matched and before processing output.
+.TP
+.B :json
+Json representation of this node formatted without newlines.
+.TP
+.BI :json: field
+Json representation of
+.I field
+formatted without newlines. See
+.B FIELDS
+above for
+.IR field .
+.SH "ENVIRONMENT VARIABLES"
+.TP
+.B I3_SOCKET
+If
+.B \-s
+is not given, this variable is used to determine the path of i3's IPC socket,
+overriding the usual lookup.
+.SH "EXIT STATUS"
+The exit status is 0 on success, 1 if success condition was not met and
+2 if an error occurred.
+In match\-mode success means that at least one node was selected. If
+.B \-l
+was specified, the exit status is according to that option.
+In subscribe\-mode
+.B i3\-match
+exits on success, so the exit status is always 0 unless an error occurred.
+.SH EXAMPLES
+.TP
+.B i3-match -t
+Print a simple hierarchy tree with names for each container.
+.TP
+.B i3-match 'name=*Firefox' -l 2 && echo true
+Print "true" when there are at least two containers with titles
+containing "Firefox".
+.TP
+.B i3-match focused=true -a -h -o :itree rect/{width,height} name
+Print width, height and title for each window and container.
+Highlight the focused window.
+.TP
+.B i3-match -S :evtype=window change=new
+Wait for a window to be created, then exit.
+.TP
+.B i3-match -Sm :evtype=window container/focused=true -o container/name
+Print the name of the focused window every time it changes.

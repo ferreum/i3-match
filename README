@@ -1,0 +1,205 @@
+I3-MATCH(1)                 General Commands Manual                I3-MATCH(1)
+
+
+
+NAME
+       i3-match - access to i3 window manager's IPC interface
+
+SYNOPSIS
+       i3-match [-S] [option|filter]...  [-o field...]
+
+DESCRIPTION
+       i3-match  provides  command-line  access  to  i3  window  manager's IPC
+       (interprocess communication) interface.
+
+       i3-match has two modes of operation: match-mode and subscribe-mode.
+
+       In both modes, filters are used to select nodes.
+
+       Match-mode is the default. In this mode nodes are containers/windows in
+       i3's layout tree.
+
+       The  option  -S  enters subscribe-mode. Here, nodes are events received
+       via i3's subscribe feature.
+
+OPTIONS
+       -a     Print unmatched nodes too. Output the :match field or specify -h
+              to  highlight  matches.   If  specified  twice in subscribe mode
+              ("almost all"), events not  matching  filters  for  the  :evtype
+              field are left out.
+
+       -d delimiter
+              Set the current delimiter. Default is space (' ').
+
+       -e field op value
+              Specify  a  filter  with  three following arguments. See FILTERS
+              below.
+
+       -h     Highlight matches. Useful with -a.
+
+       -i file
+              Read json tree from file instead of querying via i3 IPC. If file
+              is "-" read from stdin. Match-mode only.
+
+       -l num Consider  success  after  num  matches. Default is 1. Match-mode
+              only (see also -n).
+
+       -m     Keep monitoring for events infinitely. Specifying -n after  this
+              option  overrides  this  effect.  Sets printed fields to :evtype
+              change current/name container/name binding/command unless -o  is
+              given.  Subscribe-mode only.
+
+       -n num In  match-mode:  Exit  after  printing  num  nodes. If no output
+              fields are selected, this option is ignored  (you  may  want  -l
+              instead).  In subscribe-mode: exit after matching num nodes.
+
+       -o field...
+              Print  the values of given fields for each matched node. Printed
+              values are separated by the current  delimiter  (see  -d).   All
+              arguments following this option are treated as field names.
+
+       -S     Enter  subscribe-mode. This may not be specified after mode-spe‐
+              cific options.
+
+       -s path
+              Specify the path of the i3 socket to use. By default,  uses  the
+              socket of the i3 instance of the current display.
+
+       -t     Same  as -o :itree name.  If both -t and -o are given, :itree is
+              added before the first specified ouptut field. Match-mode only.
+
+FILTERS
+       Filters are conditions applied to each node to choose  which  nodes  to
+       select.  All filters need to match to a node for it to be selected.
+
+       Filters  are specified with the syntax field op value in a single argu‐
+       ment without delimiting characters or by specifying  the  arguments  -e
+       field  op  value.   field  is the name of any field (see FIELDS below).
+       value is the string to match against.  op is any of the following oper‐
+       ators:
+
+       =      Matches when the value of field is exactly value.
+
+       *=     Matches when the value of field contains value.
+
+       ^=     Matches when the value of field starts with value.
+
+       $=     Matches when the value of field ends with value.
+
+       The meaning of any operator can be inverted by prefixing it with excla‐
+       mation mark (!).
+
+FIELDS
+       Fields contain values for each node. They are accessed via their  names
+       in the json-structure of each node.
+
+       Hierarchies  of  json objects are accessed using slashes (/) as separa‐
+       tor.
+
+       Fields not found for a node are empty. There is no check for whether  a
+       field name is valid.
+
+       See i3 IPC documentation (https://i3wm.org/docs/ipc.html) for a list of
+       fields.
+
+   Pseudo fields
+       i3-match provides additional information for each  node.  Pseudo-fields
+       access this information. All pseudo-fields start with colon (:).
+
+       :match 1,  if  this node is a match. 0 otherwise. 0 when used in a fil‐
+              ter.
+
+       :level Nesting level of this node in i3's layout tree. 0 for  the  root
+              node.  0 in subscribe-mode.
+
+       :floating
+              1,  if  this node is contained in a floating_nodes array. Incre‐
+              ments by 1 for each nesting level inside such a node. 0 in  sub‐
+              scribe-mode.
+
+       :scratch
+              1,  if this node's scratchpad_state is not none. Increments by 1
+              for each nesting level inside such a node. 0 in subscribe-mode.
+
+       :workspace
+              Name of the workspace containing this node. Empty if  this  node
+              is not contained by a workspace. Empty in subscribe-mode.
+
+       :output
+              Name  of the output (screen) containing this node. Empty if this
+              node is not contained by an output. Empty in subscribe-mode.
+
+       :sibi  Index of this node within the current list of  siblings.   0  in
+              subscribe-mode.
+
+       :sibc  Number of siblings of this node. 0 in subscribe-mode.
+
+       :childc
+              Number of children of this node. 0 in subscribe-mode.
+
+       :indent
+              Outputs  an  indented hierarchy tree. Matched nodes are indented
+              with dashes ('--') other nodes with spaces ('  ').  Only  useful
+              in match-mode.
+
+       :itree Outputs  an indented hierarchy resembling the output of tree(1).
+              Only useful in match-mode.
+
+       :evtype
+              Event type in subscribe-mode. One of  workspace,  output,  mode,
+              window, barconfig_update, binding.
+
+              This  field  is  special when used in filters in subscribe-mode.
+              These filters are used to decide which events to subscribe  for.
+              This  an  optimization  and  only makes a visual difference when
+              specifying -a twice.
+
+              When filters are specified such that no event types would match,
+              i3-match exits with an error message.
+
+              "none" in match-mode.
+
+       :nodei Index of this node.
+
+       :matchc
+              Current  number of matches up to this point. This is incremented
+              after a node is matched and before processing output.
+
+       :json  Json representation of this node formatted without newlines.
+
+       :json:field
+              Json representation of field  formatted  without  newlines.  See
+              FIELDS above for field.  Pseudo fields are not available here.
+
+ENVIRONMENT VARIABLES
+       I3SOCK If  -s is not given, this variable is used to determine the path
+              of i3's IPC socket, overriding the usual lookup.
+
+EXIT STATUS
+       The exit status is 0 on success, 1 if success condition was not met and
+       2  if an error occurred.  In match-mode success means that at least one
+       node was selected. If -l was specified, the exit status is according to
+       that  option.  In subscribe-mode i3-match exits on success, so the exit
+       status is always 0 unless an error occurred.
+
+EXAMPLES
+       i3-match -t
+              Print a simple hierarchy tree with names for each container.
+
+       i3-match 'name*=Firefox' -l 2 && echo true
+              Print "true" when there are at least two containers with  titles
+              containing "Firefox".
+
+       i3-match focused=true -a -h -o :itree rect/{width,height} name
+              Print  width,  height  and  title for each window and container.
+              Highlight the focused window.
+
+       i3-match -S :evtype=window change=new
+              Wait for a window to be created, then exit.
+
+       i3-match -Sm :evtype=window container/focused=true -o container/name
+              Print the name of the focused window every time it changes.
+
+
+
+                                                                   I3-MATCH(1)

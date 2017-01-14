@@ -194,6 +194,9 @@ EXAMPLES
               Print  width,  height  and  title for each window and container.
               Highlight the focused window.
 
+       i3-match focused=true -ahto rect/{width,height} name
+              Same as above.
+
        i3-match -S :evtype=window change=new
               Wait for a window to be created, then exit.
 

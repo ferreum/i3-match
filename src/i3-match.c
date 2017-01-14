@@ -389,7 +389,8 @@ int main(int argc, char *argv[]) {
         do { fprintf(stderr, option " can only be used in " mode "\n"); return 2; } while (0)
     const char *spath = NULL;
     mode mode = MODE_MATCH;
-    int almostall = 0, mincount = 1;
+    int almostall = 0, mincount = 1, printtree = 0;
+    char **aoutputs = NULL;
     int c;
     int have_modearg = 0;
     const char *infile = NULL;
@@ -475,6 +476,7 @@ int main(int argc, char *argv[]) {
             case 't':
                 if (mode != MODE_MATCH) EXIT_MODE_ERROR("match-mode", "-t");
                 have_modearg = 1;
+                printtree = 1;
                 context.outmode = OUT_FIELDS;
                 context.outputs = TREE_OUTPUTS;
                 context.outputc = TREE_OUTPUTS_COUNT;
@@ -486,8 +488,16 @@ int main(int argc, char *argv[]) {
                 }
                 have_modearg = 1;
                 context.outmode = OUT_FIELDS;
-                context.outputs = argv + optind;
-                context.outputc = argc - optind;
+                if (printtree) {
+                    aoutputs = calloc(argc - optind + 1, sizeof(char*));
+                    aoutputs[0] = ":itree";
+                    memcpy(aoutputs + 1, argv + optind, (argc - optind) * sizeof(char*));
+                    context.outputs = aoutputs;
+                    context.outputc = argc - optind + 1;
+                } else {
+                    context.outputs = argv + optind;
+                    context.outputc = argc - optind;
+                }
                 goto argparse_finished;
             case '?':
                 return 2;
@@ -609,6 +619,7 @@ argparse_finished: {}
     }
     sb_free(&context.itree);
     sb_free(&context.sb);
+    free(aoutputs);
 
     return result;
 }

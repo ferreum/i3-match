@@ -37,7 +37,7 @@ filters for the
 field are left out.
 .TP
 .BI \-d " delimiter"
-Set the current delimiter. Default is space (' ').
+Set the delimiter. Default is " " (space).
 .TP
 .BI \-e " field op value"
 Specify a filter with three following arguments. See
@@ -53,7 +53,9 @@ Read json tree from
 .I file
 instead of querying via i3 IPC. If
 .I file
-is "\-" read from stdin. Match\-mode only.
+is
+.B \-
+read from stdin. Match\-mode only.
 .TP
 .BI \-l " num"
 Consider success after
@@ -83,7 +85,7 @@ nodes.
 .TP
 .BI \-o " field" \fR...
 Print the values of given fields for each matched node. Printed values are
-separated by the current delimiter
+separated by the delimiter
 .RB "(see " \-d ).
 All arguments following this option are treated as field names.
 .TP
@@ -147,15 +149,15 @@ ends with
 .IR value .
 .PP
 The meaning of any operator can be inverted by prefixing it with
-exclamation mark
-.RB ( ! ).
+.B !
+(exclamation mark).
 .SH FIELDS
 Fields contain values for each node. They are accessed via their names in
 the json\-structure of each node.
 .PP
-Hierarchies of json objects are accessed using slashes
-.RB ( / )
-as separator.
+Hierarchies of json objects are accessed using
+.B /
+(slashes) as separator.
 .PP
 Fields not found for a node are empty. There is no check for whether a field
 name is valid.
@@ -165,7 +167,8 @@ See i3 IPC documentation (https://i3wm.org/docs/ipc.html) for a list of fields.
 .B i3\-match
 provides additional information for each node. Pseudo\-fields access this
 information. All pseudo\-fields start with colon
-.RB ( : ).
+.B :
+(colon).
 .TP
 .B :match
 1, if this node is a match. 0 otherwise. 0 when used in a filter.
@@ -201,8 +204,9 @@ Number of siblings of this node. 0 in subscribe\-mode.
 Number of children of this node. 0 in subscribe\-mode.
 .TP
 .B :indent
-Outputs an indented hierarchy tree. Matched nodes are indented with
-dashes ('\-\-') other nodes with spaces ('  '). Only useful in match\-mode.
+Outputs an indented hierarchy tree. Matched nodes are indented with '\-\-' (two
+dashes) other nodes with '  ' (two spaces) per level. Only useful in
+match\-mode.
 .TP
 .B :itree
 Outputs an indented hierarchy resembling the output of
@@ -229,7 +233,7 @@ exits with an error message.
 Index of this node.
 .TP
 .B :matchc
-Current number of matches up to this point. This is incremented after
+Number of matches up to this point. This is incremented after
 a node is matched and before processing output.
 .TP
 .B :json

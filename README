@@ -29,7 +29,7 @@ OPTIONS
               field are left out.
 
        -d delimiter
-              Set the current delimiter. Default is space (' ').
+              Set the delimiter. Default is " " (space).
 
        -e field op value
               Specify  a  filter  with  three following arguments. See FILTERS
@@ -39,7 +39,7 @@ OPTIONS
 
        -i file
               Read json tree from file instead of querying via i3 IPC. If file
-              is "-" read from stdin. Match-mode only.
+              is - read from stdin. Match-mode only.
 
        -l num Consider  success  after  num  matches. Default is 1. Match-mode
               only (see also -n).
@@ -55,8 +55,8 @@ OPTIONS
 
        -o field...
               Print  the values of given fields for each matched node. Printed
-              values are separated by the current  delimiter  (see  -d).   All
-              arguments following this option are treated as field names.
+              values are separated by the delimiter (see -d).   All  arguments
+              following this option are treated as field names.
 
        -S     Enter  subscribe-mode. This may not be specified after mode-spe‐
               cific options.
@@ -86,14 +86,14 @@ FILTERS
 
        $=     Matches when the value of field ends with value.
 
-       The meaning of any operator can be inverted by prefixing it with excla‐
-       mation mark (!).
+       The  meaning  of  any  operator  can be inverted by prefixing it with !
+       (exclamation mark).
 
 FIELDS
        Fields contain values for each node. They are accessed via their  names
        in the json-structure of each node.
 
-       Hierarchies  of  json objects are accessed using slashes (/) as separa‐
+       Hierarchies  of  json objects are accessed using / (slashes) as separa‐
        tor.
 
        Fields not found for a node are empty. There is no check for whether  a
@@ -104,7 +104,7 @@ FIELDS
 
    Pseudo fields
        i3-match provides additional information for each  node.  Pseudo-fields
-       access this information. All pseudo-fields start with colon (:).
+       access this information. All pseudo-fields start with colon : (colon).
 
        :match 1,  if  this node is a match. 0 otherwise. 0 when used in a fil‐
               ter.
@@ -139,8 +139,8 @@ FIELDS
 
        :indent
               Outputs  an  indented hierarchy tree. Matched nodes are indented
-              with dashes ('--') other nodes with spaces ('  ').  Only  useful
-              in match-mode.
+              with '--' (two dashes) other nodes with '  '  (two  spaces)  per
+              level. Only useful in match-mode.
 
        :itree Outputs  an indented hierarchy resembling the output of tree(1).
               Only useful in match-mode.
@@ -162,8 +162,8 @@ FIELDS
        :nodei Index of this node.
 
        :matchc
-              Current  number of matches up to this point. This is incremented
-              after a node is matched and before processing output.
+              Number  of matches up to this point. This is incremented after a
+              node is matched and before processing output.
 
        :json  Json representation of this node formatted without newlines.
 

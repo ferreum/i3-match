@@ -16,7 +16,7 @@
 #include <stdarg.h>
 
 const char *i3ipc_get_env_sockpath(void) {
-    return getenv("I3_SOCKET");
+    return getenv("I3SOCK");
 }
 
 char *i3ipc_get_xcb_sockpath(void) {

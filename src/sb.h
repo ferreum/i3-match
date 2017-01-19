@@ -3,8 +3,6 @@
 
 #include "base.h"
 
-#include <i3/ipc.h>
-
 #include <stdio.h>
 
 #define SB_FLAG_EXT_BUF 0x0001

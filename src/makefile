@@ -16,7 +16,7 @@ TARGET_OBJS = $(patsubst %,$(SRCDIR)/%.o,$(TARGETS))
 # objs without a main definition
 SHARE_OBJS = $(filter-out $(TARGET_OBJS),$(OBJS))
 
-CFLAGS = -Wall -pedantic -Wextra -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes
+CFLAGS += -Wall -pedantic -Wextra -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes
 
 ifdef ASCII_TREE
 CFLAGS += -DASCII_TREE
@@ -44,14 +44,13 @@ info:
 	@echo SHARE_OBJS: $(SHARE_OBJS)
 
 clean:
-	rm -f -- $(TARGETS) $(OBJS) makefile.depend makefile.depend.bak
+	rm -f -- $(TARGETS) $(OBJS) makefile.depend
 
-depend:
+depend: makefile.depend
+
+makefile.depend: $(SRCS)
 	rm -f makefile.depend
-
-makefile.depend:
-	touch $@
-	makedepend -f$@ -Y$(SRCDIR) -- $(CFLAGS) -- $(SRCS)
+	$(CC) $(CFLAGS) -MM $^ >makefile.depend
 
 -include makefile.depend
 

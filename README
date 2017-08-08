@@ -3,7 +3,7 @@ I3-MATCH(1)                 General Commands Manual                I3-MATCH(1)
 
 
 NAME
-       i3-match - access to i3 window manager's IPC interface
+       i3-match - match and query i3 window properties and events
 
 SYNOPSIS
        i3-match [-S] [option|filter]...  [-o field...]
@@ -29,7 +29,7 @@ OPTIONS
               field are left out.
 
        -d delimiter
-              Set the delimiter. Default is " " (space).
+              Set the delimiter. Default is space (" ").
 
        -e field op value
               Specify  a  filter  with  three following arguments. See FILTERS
@@ -39,7 +39,7 @@ OPTIONS
 
        -i file
               Read json tree from file instead of querying via i3 IPC. If file
-              is - read from stdin. Match-mode only.
+              is a single dash ("-") read from stdin. Match-mode only.
 
        -l num Consider  success  after  num  matches. Default is 1. Match-mode
               only (see also -n).
@@ -66,7 +66,7 @@ OPTIONS
               socket of the i3 instance of the current display.
 
        -t     Same  as -o :itree name.  If both -t and -o are given, :itree is
-              added before the first specified ouptut field. Match-mode only.
+              added before the first specified output field. Match-mode only.
 
 FILTERS
        Filters are conditions applied to each node to choose  which  nodes  to
@@ -75,7 +75,7 @@ FILTERS
        Filters  are specified with the syntax field op value in a single argu‐
        ment without delimiting characters or by specifying  the  arguments  -e
        field  op  value.   field  is the name of any field (see FIELDS below).
-       value is the string to match against.  op is any of the following oper‐
+       value is the string to match against.  op is one of the following oper‐
        ators:
 
        =      Matches when the value of field is exactly value.
@@ -86,14 +86,14 @@ FILTERS
 
        $=     Matches when the value of field ends with value.
 
-       The  meaning  of  any  operator  can be inverted by prefixing it with !
-       (exclamation mark).
+       The  meaning  of  any  operator can be inverted by prefixing it with an
+       exclamation mark ("!").
 
 FIELDS
        Fields contain values for each node. They are accessed via their  names
        in the json-structure of each node.
 
-       Hierarchies  of  json objects are accessed using / (slashes) as separa‐
+       Hierarchies of json objects are accessed using slashes ("/") as separa‐
        tor.
 
        Fields not found for a node are empty. There is no check for whether  a
@@ -104,7 +104,7 @@ FIELDS
 
    Pseudo fields
        i3-match provides additional information for each  node.  Pseudo-fields
-       access this information. All pseudo-fields start with colon : (colon).
+       access this information. All pseudo-fields start with colon (":").
 
        :match 1,  if  this node is a match. 0 otherwise. 0 when used in a fil‐
               ter.
@@ -139,7 +139,7 @@ FIELDS
 
        :indent
               Outputs  an  indented hierarchy tree. Matched nodes are indented
-              with '--' (two dashes) other nodes with '  '  (two  spaces)  per
+              with two dashes ("--") other nodes with two spaces  ("   ")  per
               level. Only useful in match-mode.
 
        :itree Outputs  an indented hierarchy resembling the output of tree(1).

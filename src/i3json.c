@@ -8,7 +8,7 @@
 #include <string.h>
 
 struct operator {
-    const char const *str;
+    const char *str;
     const size_t len;
     const int type;
 };
@@ -364,7 +364,7 @@ extern void i3json_print_tree(FILE *stream, yajl_val tree, yajl_val selected) {
 }
 
 static iter_advise i3json_iter_nodes_recurse(yajl_val tree, iter_info *info, i3json_iter_nodes_pred pred, void *ptr) {
-    static const char const *keys[] = {"nodes", "floating_nodes"};
+    static const char *keys[] = {"nodes", "floating_nodes"};
     int ki;
     int subnodec = 0;
     const char *ykey[2] = {NULL, NULL};

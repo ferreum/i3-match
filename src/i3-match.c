@@ -48,10 +48,10 @@
 #define CH_SPACE ' '
 #define CH_BAR '|'
 
-const char const *ALL_EVENTS_SUB_JSON = "[\"workspace\",\"output\",\"mode\",\"window\",\"barconfig_update\",\"binding\"]";
+const char *ALL_EVENTS_SUB_JSON = "[\"workspace\",\"output\",\"mode\",\"window\",\"barconfig_update\",\"binding\"]";
 
 #define EVENT_TYPE_COUNT 6
-const char const *EVENT_NAMES[EVENT_TYPE_COUNT] = {
+const char *EVENT_NAMES[EVENT_TYPE_COUNT] = {
     "workspace", // (I3_IPC_EVENT_MASK | 0)
     "output", // (I3_IPC_EVENT_MASK | 1)
     "mode", // (I3_IPC_EVENT_MASK | 2)

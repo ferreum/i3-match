@@ -44,6 +44,7 @@ char *i3ipc_get_cmd_sockpath(void) {
         }
         // not reached on success
         assert(0);
+        break;
     }
     default: {
         close(fd_p[1]);

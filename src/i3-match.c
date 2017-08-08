@@ -205,7 +205,7 @@ static void push_value(string_builder *sb, const char* key,
         if (str) {
             sb_push(sb, str);
         } else {
-            // n is array or hash
+            // n is array or object
             yajlutil_serialize_val(get_sb_gen(ctx), n, 0);
         }
     }

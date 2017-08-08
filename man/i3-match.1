@@ -1,6 +1,6 @@
 .TH I3\-MATCH 1
 .SH NAME
-i3\-match \- access to i3 window manager's IPC interface
+i3\-match \- match and query i3 window properties and events
 .SH SYNOPSIS
 .B i3\-match
 .RB [ \-S ]
@@ -37,7 +37,7 @@ filters for the
 field are left out.
 .TP
 .BI \-d " delimiter"
-Set the delimiter. Default is " " (space).
+Set the delimiter. Default is space (" ").
 .TP
 .BI \-e " field op value"
 Specify a filter with three following arguments. See
@@ -53,9 +53,7 @@ Read json tree from
 .I file
 instead of querying via i3 IPC. If
 .I file
-is
-.B \-
-read from stdin. Match\-mode only.
+is a single dash ("\fB-\fR") read from stdin. Match\-mode only.
 .TP
 .BI \-l " num"
 Consider success after
@@ -105,7 +103,7 @@ and
 .B \-o
 are given,
 .B :itree
-is added before the first specified ouptut field. Match\-mode only.
+is added before the first specified output field. Match\-mode only.
 .SH FILTERS
 Filters are conditions applied to each node to choose which nodes to select.
 All filters need to match to a node for it to be selected.
@@ -122,7 +120,7 @@ below).
 .I value
 is the string to match against.
 .I op
-is any of the following operators:
+is one of the following operators:
 .TP
 .B =
 Matches when the value of
@@ -148,16 +146,13 @@ Matches when the value of
 ends with
 .IR value .
 .PP
-The meaning of any operator can be inverted by prefixing it with
-.B !
-(exclamation mark).
+The meaning of any operator can be inverted by prefixing it with an exclamation
+mark ("\fB!\fR").
 .SH FIELDS
 Fields contain values for each node. They are accessed via their names in
 the json\-structure of each node.
 .PP
-Hierarchies of json objects are accessed using
-.B /
-(slashes) as separator.
+Hierarchies of json objects are accessed using slashes ("\fB/\fR") as separator.
 .PP
 Fields not found for a node are empty. There is no check for whether a field
 name is valid.
@@ -166,9 +161,7 @@ See i3 IPC documentation (https://i3wm.org/docs/ipc.html) for a list of fields.
 .SS "Pseudo fields"
 .B i3\-match
 provides additional information for each node. Pseudo\-fields access this
-information. All pseudo\-fields start with colon
-.B :
-(colon).
+information. All pseudo\-fields start with colon ("\fB:\fR").
 .TP
 .B :match
 1, if this node is a match. 0 otherwise. 0 when used in a filter.
@@ -204,8 +197,8 @@ Number of siblings of this node. 0 in subscribe\-mode.
 Number of children of this node. 0 in subscribe\-mode.
 .TP
 .B :indent
-Outputs an indented hierarchy tree. Matched nodes are indented with '\-\-' (two
-dashes) other nodes with '  ' (two spaces) per level. Only useful in
+Outputs an indented hierarchy tree. Matched nodes are indented with two dashes
+("\fB\-\-\fR") other nodes with two spaces ("  ") per level. Only useful in
 match\-mode.
 .TP
 .B :itree

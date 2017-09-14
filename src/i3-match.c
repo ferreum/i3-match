@@ -105,13 +105,13 @@ typedef struct context {
 
 static const char *get_eventtype(unsigned int type) {
     unsigned int i = type & ~I3_IPC_EVENT_MASK;
-    if (i != type) {
-        if (i >= EVENT_TYPE_COUNT) {
-            return "unknown";
-        }
-        return EVENT_NAMES[i];
+    if (i == type) {
+        return "none";
     }
-    return "none";
+    if (i >= EVENT_TYPE_COUNT) {
+        return "unknown";
+    }
+    return EVENT_NAMES[i];
 }
 
 static yajl_gen get_sb_gen(context *context) {

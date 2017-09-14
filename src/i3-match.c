@@ -48,9 +48,9 @@
 #define CH_SPACE ' '
 #define CH_BAR '|'
 
-const char *ALL_EVENTS_SUB_JSON = "[\"workspace\",\"output\",\"mode\",\"window\",\"barconfig_update\",\"binding\"]";
+const char *ALL_EVENTS_SUB_JSON = "[\"workspace\",\"output\",\"mode\",\"window\",\"barconfig_update\",\"binding\",\"shutdown\"]";
 
-#define EVENT_TYPE_COUNT 6
+#define EVENT_TYPE_COUNT 7
 const char *EVENT_NAMES[EVENT_TYPE_COUNT] = {
     "workspace", // (I3_IPC_EVENT_MASK | 0)
     "output", // (I3_IPC_EVENT_MASK | 1)
@@ -58,6 +58,7 @@ const char *EVENT_NAMES[EVENT_TYPE_COUNT] = {
     "window", // (I3_IPC_EVENT_MASK | 3)
     "barconfig_update", // (I3_IPC_EVENT_MASK | 4)
     "binding", // (I3_IPC_EVENT_MASK | 5)
+    "shutdown", // (I3_IPC_EVENT_MASK | 6)
 };
 
 #define TREE_OUTPUTS_COUNT 2

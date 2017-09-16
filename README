@@ -147,7 +147,7 @@ FIELDS
 
        :evtype
               Event type in subscribe-mode. One of  workspace,  output,  mode,
-              window, barconfig_update, binding.
+              window, barconfig_update, binding, shutdown.
 
               This  field  is  special when used in filters in subscribe-mode.
               These filters are used to decide which events to subscribe  for.

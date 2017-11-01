@@ -295,6 +295,7 @@ static int eventloop(int sock, context *ctx) {
     // iter_info values not meaningful for events
     iter_info info = { 0, 0, 0, 0, 0 };
     ctx->msg = &msg;
+    int status = 0;
     for (;;) {
         if (i3ipc_recv_message(sock, &msg) == -1) {
             del_i3_msg(&msg);
@@ -310,17 +311,21 @@ static int eventloop(int sock, context *ctx) {
         event = NULL;
         switch (advise) {
         case ITER_ABORT_SUCCESS:
-            return 0;
+            status = 0;
+            goto cleanup;
         case ITER_ABORT:
-            return 1;
+            status = 1;
+            goto cleanup;
         case ITER_CONT:
             break;
         case ITER_NODESC:
             assert(0);
         }
     }
+cleanup:
     del_i3_msg(&msg);
     ctx->msg = NULL;
+    return status;
 }
 
 static int match_evtype_only(i3json_matcher *matchers, int matcherc, const char *type) {
@@ -354,11 +359,12 @@ static char *get_matching_evtypes(i3json_matcher *matchers, int matcherc) {
                             strlen(EVENT_NAMES[i]));
         }
     }
+    yajl_gen_array_close(gen);
+    yajl_gen_free(gen);
     if (!matches) {
         sb_free(&sb);
         return NULL;
     }
-    yajl_gen_array_close(gen);
     return sb_disown(&sb);
 }
 

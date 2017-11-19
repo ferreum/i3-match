@@ -5,8 +5,10 @@
 #include "base.h"
 
 #include <yajl/yajl_gen.h>
+#include <yajl/yajl_tree.h>
 
 #include <string.h>
+#include <stdlib.h>
 #include <assert.h>
 
 static void print_cb_fwrite(void *ctx, const char *str, size_t len) {
@@ -145,21 +147,40 @@ extern yajl_val yajlutil_path_get(yajl_val obj, const char *path, yajl_type type
     for (;;) {
         char *p = strchr(path, '/');
         const char *ykey[2] = {NULL, NULL};
-        if (p) {
-            size_t len = p - path;
-            STACK_SUBSTR(key, path, len);
+        const char *keyend = p ? p : path + strlen(path);
+        int keylen = keyend - path;
+        if (YAJL_IS_ARRAY(obj)) {
+            debug_print("array key=%.*s\n", keylen, path);
+            char *end = NULL;
+            int index = strtol(path, &end, 10);
+            debug_print("used array key=%.*s\n", (int) (end - path), path);
+            if ((char*) end != keyend) {
+                return NULL;
+            }
+            if (index < 0) {
+                index += obj->u.array.len;
+            }
+            if (index < 0 || (size_t) index >= obj->u.array.len) {
+                return NULL;
+            } else {
+                obj = obj->u.array.values[index];
+            }
+        } else {
+            STACK_SUBSTR(key, path, keylen);
             debug_print("key=%s\n", key);
             ykey[0] = key;
             obj = yajl_tree_get(obj, ykey, yajl_t_any);
-        } else {
-            debug_print("lastkey=%s\n", path);
-            ykey[0] = path;
-            obj = yajl_tree_get(obj, ykey, type);
         }
-        if (p && obj) {
-            path = p + 1;
+        if (!p) {
+            if (type == yajl_t_any || (obj && obj->type == type)) {
+                return obj;
+            } else {
+                return NULL;
+            }
+        } else if (!obj) {
+            return NULL;
         } else {
-            return obj;
+            path = p + 1;
         }
     }
 }

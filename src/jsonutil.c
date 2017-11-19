@@ -154,7 +154,7 @@ extern yajl_val yajlutil_path_get(yajl_val obj, const char *path, yajl_type type
             char *end = NULL;
             int index = strtol(path, &end, 10);
             debug_print("used array key=%.*s\n", (int) (end - path), path);
-            if ((char*) end != keyend) {
+            if (end != keyend) {
                 return NULL;
             }
             if (index < 0) {

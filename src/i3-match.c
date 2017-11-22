@@ -82,6 +82,7 @@ typedef enum outmode {
 enum flags {
     F_PRINTALL = 1<<0,
     F_HIGHLIGHT = 1<<1,
+    F_FLUSH = 1<<2,
 };
 
 typedef struct context {
@@ -273,6 +274,9 @@ static iter_advise process_node(yajl_val node, iter_info *info, context *ctx) {
             format_fields(node, info, ctx, match);
             sb_pushn(&ctx->sb, "\n", 1);
             fwrite(ctx->sb.buf, sizeof(char), ctx->sb.len, stdout);
+            if (ctx->flags & F_FLUSH) {
+                fflush(stdout);
+            }
             break;
         }
     }
@@ -416,6 +420,7 @@ int main(int argc, char *argv[]) {
                     return 2;
                 }
                 context.maxcount = 1;
+                context.flags |= F_FLUSH;
                 mode = MODE_SUBSCRIBE;
                 break;
             case 'i':

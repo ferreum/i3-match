@@ -147,14 +147,14 @@ FIELDS
 
        :evtype
               Event type in subscribe-mode. One of  workspace,  output,  mode,
-              window, barconfig_update, binding, shutdown.
+              window, barconfig_update, binding, shutdown, tick.
 
-              This  field  is  special when used in filters in subscribe-mode.
-              These filters are used to decide which events to subscribe  for.
-              This  an  optimization  and  only makes a visual difference when
-              specifying -a twice.
+              This  field  is  special when used in filters in subscribe-mode:
+              Filters on this field are used to decide which  events  to  sub‐
+              scribe for. This is an optimization and only makes a visual dif‐
+              ference when specifying -a twice.
 
-              When filters are specified such that no event types would match,
+              If filters  are  specified  such  that  no  event  types  match,
               i3-match exits with an error message.
 
               "none" in match-mode.

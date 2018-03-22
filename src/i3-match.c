@@ -48,9 +48,9 @@
 #define CH_SPACE ' '
 #define CH_BAR '|'
 
-const char *ALL_EVENTS_SUB_JSON = "[\"workspace\",\"output\",\"mode\",\"window\",\"barconfig_update\",\"binding\",\"shutdown\"]";
+const char *ALL_EVENTS_SUB_JSON = "[\"workspace\",\"output\",\"mode\",\"window\",\"barconfig_update\",\"binding\",\"shutdown\",\"tick\"]";
 
-#define EVENT_TYPE_COUNT 7
+#define EVENT_TYPE_COUNT 8
 const char *EVENT_NAMES[EVENT_TYPE_COUNT] = {
     "workspace", // (I3_IPC_EVENT_MASK | 0)
     "output", // (I3_IPC_EVENT_MASK | 1)
@@ -59,14 +59,15 @@ const char *EVENT_NAMES[EVENT_TYPE_COUNT] = {
     "barconfig_update", // (I3_IPC_EVENT_MASK | 4)
     "binding", // (I3_IPC_EVENT_MASK | 5)
     "shutdown", // (I3_IPC_EVENT_MASK | 6)
+    "tick", // (I3_IPC_EVENT_MASK | 7)
 };
 
 #define TREE_OUTPUTS_COUNT 2
 char *TREE_OUTPUTS[TREE_OUTPUTS_COUNT] = { ":itree", "name" };
 
-#define DEFAULT_MONITOR_OUTPUT_COUNT 5
+#define DEFAULT_MONITOR_OUTPUT_COUNT 6
 char *DEFAULT_MONITOR_OUTPUTS[DEFAULT_MONITOR_OUTPUT_COUNT] = {
-    ":evtype", "change", "current/name", "container/name", "binding/command"
+    ":evtype", "change", "current/name", "container/name", "binding/command", "payload"
 };
 
 typedef enum mode {

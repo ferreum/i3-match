@@ -46,8 +46,8 @@ OPTIONS
 
        -m     Keep monitoring for events infinitely. Specifying -n after  this
               option  overrides  this  effect.  Sets printed fields to :evtype
-              change current/name container/name binding/command unless -o  is
-              given.  Subscribe-mode only.
+              change  current/name  container/name   binding/command   payload
+              unless -o is given.  Subscribe-mode only.
 
        -n num In  match-mode:  Exit  after  printing  num  nodes. If no output
               fields are selected, this option is ignored  (you  may  want  -l

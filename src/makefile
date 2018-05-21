@@ -55,7 +55,7 @@ makefile.depend: $(SRCS)
 -include makefile.depend
 
 i3-%: $(SRCDIR)/i3-%.o $(SHARE_OBJS)
-	$(CC) $(CFLAGS) $(I3LIBS) -o $@ $(patsubst %,$(SRCDIR)/%.o,$@) $(SHARE_OBJS)
+	$(CC) $(CFLAGS) -o $@ $(patsubst %,$(SRCDIR)/%.o,$@) $(SHARE_OBJS) $(I3LIBS)
 
 $(SRCDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<

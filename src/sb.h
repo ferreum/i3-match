@@ -4,6 +4,7 @@
 #include "base.h"
 
 #include <stdio.h>
+#include <stdarg.h>
 
 #define SB_FLAG_EXT_BUF 0x0001
 

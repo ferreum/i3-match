@@ -18,7 +18,7 @@ enum {
 
 typedef struct i3_msg {
     int status;
-    int type;
+    unsigned long type;
     char *data;
     size_t len;
     size_t blen;
@@ -35,11 +35,11 @@ extern const char *i3ipc_get_sockpath(char **a_path);
 
 extern int i3ipc_open_socket(const char *path);
 
-extern int i3ipc_send_message(int sock, int type, const char *data);
+extern int i3ipc_send_message(int sock, unsigned long type, const char *data);
 
 extern int i3ipc_recv_message(int sock, i3_msg *msg);
 
-extern int i3ipc_request(int s, int type, const char *data, i3_msg *msg);
+extern int i3ipc_request(int s, unsigned long type, const char *data, i3_msg *msg);
 
 extern int i3ipc_send_commandf(int sock, char *buf, size_t size, char *fmt, ...);
 

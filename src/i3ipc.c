@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#include <string.h>
 
 #include <stdarg.h>
 
@@ -111,13 +112,13 @@ int i3ipc_open_socket(const char *path) {
     return s;
 }
 
-int i3ipc_send_message(int sock, int type, const char *data) {
+int i3ipc_send_message(int sock, unsigned long type, const char *data) {
     assert(sock >= 0);
-    assert(type >= 0 && type < 7);
+    assert(type < 7);
     i3_ipc_header_t hdr;
     size_t datalen = data == NULL ? 0 : strlen(data);
 
-    strncpy(hdr.magic, I3_IPC_MAGIC, sizeof(hdr.magic));
+    memcpy(hdr.magic, I3_IPC_MAGIC, sizeof(hdr.magic));
     hdr.size = datalen;
     hdr.type = type;
     int res;
@@ -201,7 +202,7 @@ void i3ipc_print_error(int status) {
     }
 }
 
-int i3ipc_request(int s, int type, const char *data, i3_msg *msg) {
+int i3ipc_request(int s, unsigned long type, const char *data, i3_msg *msg) {
     debug_print("%s\n", "sending...");
     if (i3ipc_send_message(s, type, data) == -1) {
         perror("i3ipc_send_message");
@@ -248,7 +249,7 @@ int i3ipc_send_ccommandf(int sock, char *buf, size_t size, char *fmt, ...) {
             return -1;
         }
         if (msg.type != I3_IPC_REPLY_TYPE_COMMAND) {
-            debug_print("invalid response type: 0x%x\n", msg.type);
+            debug_print("invalid response type: 0x%lx\n", msg.type);
             result = -1;
         }
     }
@@ -265,7 +266,7 @@ int i3ipc_send_ccommand(int sock, const char *data) {
         return -1;
     }
     if (msg.type != I3_IPC_REPLY_TYPE_COMMAND) {
-        debug_print("invalid response type: 0x%x\n", msg.type);
+        debug_print("invalid response type: 0x%lx\n", msg.type);
         return -1;
     }
     return 0;

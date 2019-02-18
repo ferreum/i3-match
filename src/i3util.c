@@ -77,7 +77,7 @@ int exec_wait_ex(int sock, const char *spath, char *command, long int timeout, w
             while ((c = i3ipc_recv_message(subsock, &msg)) != -1) {
                 // will receive pending responses from exec_command first
                 debug_print(
-                    "message: event=%d type=%d\n",
+                    "message: event=%d type=%ld\n",
                     (msg.type & I3_IPC_EVENT_MASK) != 0,
                     (msg.type & ~I3_IPC_EVENT_MASK));
                 if (check_event(&msg, cb, context)) {
@@ -98,7 +98,7 @@ int exec_wait_ex(int sock, const char *spath, char *command, long int timeout, w
     return result;
 }
 
-int i3util_request_json(int sock, int type, char *data, i3_msg *msg, yajl_val *jobj) {
+int i3util_request_json(int sock, unsigned long type, char *data, i3_msg *msg, yajl_val *jobj) {
     debug_print("%s\n", "sending...");
     if (i3ipc_send_message(sock, type, data) == -1) {
         perror("i3ipc_send_message");

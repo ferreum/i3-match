@@ -3,7 +3,6 @@
 #include "debug.h"
 
 #include <stdlib.h>
-#include <stdarg.h>
 #include <string.h>
 #include <assert.h>
 #ifndef DONT_USE_MALLOC_USABLE_SIZE

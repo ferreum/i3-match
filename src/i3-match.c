@@ -121,6 +121,7 @@ static yajl_gen get_sb_gen(context *context) {
     yajl_gen gen = context->sb_gen;
     if (!gen) {
         gen = yajl_gen_alloc(NULL);
+        malloc_check(gen);
         int res = yajl_gen_config(gen, yajl_gen_print_callback,
                                   yajlutil_print_cb_sb_push, &context->sb);
         assert(res);
@@ -349,6 +350,7 @@ static int match_evtype_only(i3json_matcher *matchers, int matcherc, const char 
 static char *get_matching_evtypes(i3json_matcher *matchers, int matcherc) {
     string_builder sb = EMPTY_STRING_BUILDER;
     yajl_gen gen = yajl_gen_alloc(NULL);
+    malloc_check(gen);
     int res = yajl_gen_config(gen, yajl_gen_print_callback,
                               yajlutil_print_cb_sb_push, &sb);
     assert(res);
@@ -503,6 +505,7 @@ int main(int argc, char *argv[]) {
                 context.outmode = OUT_FIELDS;
                 if (printtree) {
                     aoutputs = calloc(argc - optind + 1, sizeof(char*));
+                    malloc_check(aoutputs);
                     aoutputs[0] = ":itree";
                     memcpy(aoutputs + 1, argv + optind, (argc - optind) * sizeof(char*));
                     context.outputs = aoutputs;

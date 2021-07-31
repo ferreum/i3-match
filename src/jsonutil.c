@@ -81,7 +81,7 @@ extern void yajlutil_push_tree(string_builder *sb, yajl_val tree, int parse_numb
     yajl_gen gen;
 
     gen = yajl_gen_alloc(NULL);
-    assert(gen);
+    malloc_check(gen);
 
     if (!yajl_gen_config(gen, yajl_gen_print_callback,
                          yajlutil_print_cb_sb_push, sb)) {
@@ -97,10 +97,7 @@ static void print_tree(FILE *f, yajl_val tree, int parse_numbers) {
     yajl_gen gen;
 
     gen = yajl_gen_alloc(NULL);
-    if (!gen) {
-        fprintf(stderr, "yajl_gen_alloc failed\n");
-        assert(0);
-    }
+    malloc_check(gen);
 
     if (!yajl_gen_config(gen, yajl_gen_beautify, 1)
         || !yajl_gen_config(gen, yajl_gen_validate_utf8, 1)

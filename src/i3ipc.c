@@ -158,6 +158,7 @@ int i3ipc_recv_message(int sock, i3_msg *msg) {
         debug_print("alloc to %ld\n", len + 1);
         oldbuf = msg->data;
         mybuf = dbuf = malloc(len + 1);
+        malloc_check(dbuf);
     } else {
         dbuf = msg->data;
     }

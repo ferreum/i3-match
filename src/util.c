@@ -31,6 +31,7 @@ extern char *read_line(FILE *f) {
             l -= 1;
         }
         line = realloc(line, len + l + 1);
+        malloc_check(line);
         strncpy(line + len, buf, l);
         len += l;
         if (l < BUFSIZ-1) {

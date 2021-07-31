@@ -19,11 +19,13 @@ static void sb_ensure_size(string_builder *sb, size_t minsize) {
         if (sb->flags & SB_FLAG_EXT_BUF) {
             debug_print("move to own buffer of size %ld\n", newcount);
             newbuf = malloc(newcount);
+            malloc_check(newbuf);
             memcpy(newbuf, sb->buf, sb->len + 1);
             sb->flags &= ~SB_FLAG_EXT_BUF;
         } else {
             debug_print("realloc to size %ld\n", newcount);
             newbuf = realloc(sb->buf, newcount);
+            malloc_check(newbuf);
         }
         assert(newbuf);
         sb->buf = newbuf;

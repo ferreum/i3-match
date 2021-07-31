@@ -309,7 +309,7 @@ void i3json_print_tree_node(FILE *stream, int selected,
         indent = "==";
     }
     for (i = info->level; i > 0; i--) {
-        fprintf(stream, indent);
+        fprintf(stream, "%s\n", indent);
     }
     if (text) {
         fprintf(stream, "%s\n", text);

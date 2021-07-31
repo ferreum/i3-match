@@ -16,7 +16,7 @@ TARGET_OBJS = $(patsubst %,$(SRCDIR)/%.o,$(TARGETS))
 # objs without a main definition
 SHARE_OBJS = $(filter-out $(TARGET_OBJS),$(OBJS))
 
-CFLAGS += -Wall -pedantic -Wextra -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes
+CFLAGS += -Wall -pedantic -Wextra -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes -Wformat -Werror=format-security
 
 ifdef ASCII_TREE
 CFLAGS += -DASCII_TREE

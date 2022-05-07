@@ -424,6 +424,11 @@ int main(int argc, char *argv[]) {
 
     if ((argv[0] && strcmp("swaymatch", argv[0]) == 0)) {
         context.swaymode = 1;
+    } else {
+        const char *env_swaysock = getenv("SWAYSOCK");
+        if (env_swaysock && *env_swaysock) {
+             context.swaymode = 1;
+        }
     }
 
     #define EXIT_MODE_ERROR(mode, option) \

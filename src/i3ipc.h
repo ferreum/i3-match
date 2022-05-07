@@ -25,15 +25,7 @@ typedef struct i3_msg {
 } i3_msg;
 #define EMPTY_I3_MSG {ST_UNKNOWN, -1, NULL, 0, 0}
 
-extern const char *i3ipc_get_env_sockpath(void);
-
-extern char *i3ipc_get_xcb_sockpath(void);
-
-extern char *i3ipc_get_cmd_sockpath(void);
-
-extern const char *i3ipc_get_sockpath(char **a_path);
-
-extern int i3ipc_open_socket(const char *path);
+extern int i3ipc_open_socket(const char *path, int swaymode);
 
 extern int i3ipc_send_message(int sock, unsigned long type, const char *data);
 

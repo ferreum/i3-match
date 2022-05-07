@@ -51,7 +51,7 @@ static int check_event(i3_msg *msg, wincheck_cb cb, void *context) {
 
 int exec_wait_ex(int sock, const char *spath, char *command, long int timeout, wincheck_cb cb, void *context) {
     debug_print("%s\n", "subscribing...");
-    int subsock = i3ipc_open_socket(spath);
+    int subsock = i3ipc_open_socket(spath, 0);
     if (subsock == -1) {
         fprintf(stderr, "failed to open subscribe socket\n");
         return -1;

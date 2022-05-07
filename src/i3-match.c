@@ -49,7 +49,8 @@
 #define CH_SPACE ' '
 #define CH_BAR '|'
 
-const char *ALL_EVENTS_SUB_JSON = "[\"workspace\",\"output\",\"mode\",\"window\",\"barconfig_update\",\"binding\",\"shutdown\",\"tick\"]";
+const char *ALL_EVENTS_SUB_JSON_I3 = "[\"workspace\",\"output\",\"mode\",\"window\",\"barconfig_update\",\"binding\",\"shutdown\",\"tick\"]";
+const char *ALL_EVENTS_SUB_JSON_SWAY = "[\"workspace\",\"mode\",\"window\",\"barconfig_update\",\"binding\",\"shutdown\",\"tick\",\"bar_state_update\",\"input\"]";
 
 #define EVENT_TYPE_COUNT 8
 const char *EVENT_NAMES[EVENT_TYPE_COUNT] = {
@@ -62,13 +63,20 @@ const char *EVENT_NAMES[EVENT_TYPE_COUNT] = {
     "shutdown", // (I3_IPC_EVENT_MASK | 6)
     "tick", // (I3_IPC_EVENT_MASK | 7)
 };
+#define EVENT_TYPE_SWAY_COUNT 2
+#define EVENT_TYPE_SWAY_OFFSET 0x14
+#define EVENT_TYPE_SWAY_FIRST (I3_IPC_EVENT_MASK | EVENT_TYPE_SWAY_COUNT)
+const char *EVENT_NAMES_SWAY[EVENT_TYPE_SWAY_COUNT] = {
+    "bar_state_update", // (I3_IPC_EVENT_MASK | 0x14)
+    "input", // (I3_IPC_EVENT_MASK | 0x15)
+};
 
 #define TREE_OUTPUTS_COUNT 2
 char *TREE_OUTPUTS[TREE_OUTPUTS_COUNT] = { ":itree", "name" };
 
-#define DEFAULT_MONITOR_OUTPUT_COUNT 6
+#define DEFAULT_MONITOR_OUTPUT_COUNT 7
 char *DEFAULT_MONITOR_OUTPUTS[DEFAULT_MONITOR_OUTPUT_COUNT] = {
-    ":evtype", "change", "current/name", "container/name", "binding/command", "payload"
+    ":evtype", "change", "current/name", "container/name", "binding/command", "payload", "input/identifier"
 };
 
 typedef enum mode {
@@ -97,6 +105,7 @@ typedef struct context {
     int maxcount;
     char *field_sep;
     size_t field_sep_len;
+    int swaymode;
     string_builder sb;
     string_builder itree;
     int objcount;
@@ -108,14 +117,19 @@ typedef struct context {
 } context;
 
 static const char *get_eventtype(unsigned int type) {
-    unsigned int i = type & ~I3_IPC_EVENT_MASK;
-    if (i == type) {
+    if ((type & I3_IPC_EVENT_MASK) != I3_IPC_EVENT_MASK) {
         return "none";
     }
-    if (i >= EVENT_TYPE_COUNT) {
-        return "unknown";
+    unsigned int i = type & ~I3_IPC_EVENT_MASK;
+    if (i >= EVENT_TYPE_SWAY_FIRST) {
+        i -= EVENT_TYPE_SWAY_OFFSET;
+        if (i < EVENT_TYPE_SWAY_COUNT) {
+            return EVENT_NAMES_SWAY[i];
+        }
+    } else if (i < EVENT_TYPE_COUNT) {
+        return EVENT_NAMES[i];
     }
-    return EVENT_NAMES[i];
+    return "unknown";
 }
 
 static yajl_gen get_sb_gen(context *context) {
@@ -348,7 +362,7 @@ static int match_evtype_only(i3json_matcher *matchers, int matcherc, const char 
     return 1;
 }
 
-static char *get_matching_evtypes(i3json_matcher *matchers, int matcherc) {
+static char *get_matching_evtypes(i3json_matcher *matchers, int matcherc, int swaymode) {
     string_builder sb = EMPTY_STRING_BUILDER;
     yajl_gen gen = yajl_gen_alloc(NULL);
     malloc_check(gen);
@@ -358,13 +372,20 @@ static char *get_matching_evtypes(i3json_matcher *matchers, int matcherc) {
     int i;
     int matches = 0;
     yajl_gen_array_open(gen);
-    for (i = 0; i < EVENT_TYPE_COUNT; i++) {
-        if (match_evtype_only(matchers, matcherc, EVENT_NAMES[i])) {
+    for (i = 0; i < EVENT_TYPE_COUNT + EVENT_TYPE_SWAY_COUNT; i++) {
+        if (swaymode) {
+            // no output events on sway
+            if (i == 1) continue;
+        } else {
+            // no sway events on i3
+            if (i >= EVENT_TYPE_COUNT) break;
+        }
+        const char *name = i < EVENT_TYPE_COUNT ? EVENT_NAMES[i]
+             : EVENT_NAMES_SWAY[i - EVENT_TYPE_COUNT];
+        if (match_evtype_only(matchers, matcherc, name)) {
             ++matches;
-            debug_print("%s matches\n", EVENT_NAMES[i]);
-            yajl_gen_string(gen,
-                            (const unsigned char *) EVENT_NAMES[i],
-                            strlen(EVENT_NAMES[i]));
+            debug_print("%s matches\n", name);
+            yajl_gen_string(gen, (const unsigned char *) name, strlen(name));
         }
     }
     yajl_gen_array_close(gen);
@@ -391,6 +412,7 @@ int main(int argc, char *argv[]) {
         .maxcount = 0,
         .field_sep = " ",
         .field_sep_len = 1,
+        .swaymode = 0,
         .sb = EMPTY_STRING_BUILDER,
         .itree = SB_WITH_EXT_BUF(itree, SMALL_ITREE_SIZE),
         .matchcount = 0,
@@ -399,6 +421,15 @@ int main(int argc, char *argv[]) {
     };
 
     debug_print("BUFSIZ=%d\n", BUFSIZ);
+
+    if ((argv[0] && strcmp("swaymatch", argv[0]) == 0)) {
+        context.swaymode = 1;
+    } else {
+        const char *env_swaysock = getenv("SWAYSOCK");
+        if (env_swaysock && *env_swaysock) {
+             context.swaymode = 1;
+        }
+    }
 
     #define EXIT_MODE_ERROR(mode, option) \
         do { fprintf(stderr, option " can only be used in " mode "\n"); return 2; } while (0)
@@ -412,7 +443,7 @@ int main(int argc, char *argv[]) {
     optind = 1;
     while (optind < argc) {
         int prevind = optind;
-        if ((c = getopt(argc, argv, "+s:Si:ahml:n:d:e:to")) != -1) {
+        if ((c = getopt(argc, argv, "+s:Si:ahml:n:d:e:toIW")) != -1) {
             debug_print("option: ind=%d c=%c\n", optind, c);
             switch (c) {
             case 's':
@@ -516,6 +547,12 @@ int main(int argc, char *argv[]) {
                     context.outputc = argc - optind;
                 }
                 goto argparse_finished;
+            case 'I':
+                context.swaymode = 0;
+                break;
+            case 'W':
+                context.swaymode = 1;
+                break;
             case '?':
                 return 2;
             default:
@@ -578,7 +615,7 @@ argparse_finished: {}
             if (f) fclose(f);
         } else {
             set_default_sigchld_handler();
-            int sock = i3ipc_open_socket(spath);
+            int sock = i3ipc_open_socket(spath, context.swaymode);
             if (sock == -1) {
                 return 2;
             }
@@ -598,7 +635,7 @@ argparse_finished: {}
     }
     case MODE_SUBSCRIBE: {
         set_default_sigchld_handler();
-        int sock = i3ipc_open_socket(spath);
+        int sock = i3ipc_open_socket(spath, context.swaymode);
         if (sock == -1) {
             return 2;
         }
@@ -606,9 +643,11 @@ argparse_finished: {}
             const char *body = NULL;
             char *astr = NULL;
             if (context.flags & F_PRINTALL && !almostall) {
-                body = ALL_EVENTS_SUB_JSON;
+                body = context.swaymode ? ALL_EVENTS_SUB_JSON_SWAY
+                     : ALL_EVENTS_SUB_JSON_I3;
             } else {
-                body = astr = get_matching_evtypes(context.matchers, context.matcherc);
+                body = astr = get_matching_evtypes(
+                     context.matchers, context.matcherc, context.swaymode);
                 if (!body) {
                     fprintf(stderr, ":evtype never matches\n");
                     return 2;

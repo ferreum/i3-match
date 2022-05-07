@@ -643,7 +643,8 @@ argparse_finished: {}
             const char *body = NULL;
             char *astr = NULL;
             if (context.flags & F_PRINTALL && !almostall) {
-                body = ALL_EVENTS_SUB_JSON_I3;
+                body = context.swaymode ? ALL_EVENTS_SUB_JSON_SWAY
+                     : ALL_EVENTS_SUB_JSON_I3;
             } else {
                 body = astr = get_matching_evtypes(
                      context.matchers, context.matcherc, context.swaymode);

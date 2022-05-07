@@ -34,7 +34,7 @@ endif
 
 .PHONY: all strip info clean depend
 
-all: $(TARGETS)
+all: $(TARGETS) swaymatch
 
 strip: all
 	strip -s $(TARGETS)
@@ -54,8 +54,11 @@ makefile.depend: $(SRCS)
 
 -include makefile.depend
 
-i3-%: $(SRCDIR)/i3-%.o $(SHARE_OBJS)
+i3-match: $(SRCDIR)/i3-match.o $(SHARE_OBJS)
 	$(CC) $(CFLAGS) -o $@ $(patsubst %,$(SRCDIR)/%.o,$@) $(SHARE_OBJS) $(I3LIBS)
+
+swaymatch: i3-match
+	ln -sfTr i3-match swaymatch
 
 $(SRCDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<

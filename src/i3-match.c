@@ -422,6 +422,10 @@ int main(int argc, char *argv[]) {
 
     debug_print("BUFSIZ=%d\n", BUFSIZ);
 
+    if ((argv[0] && strcmp("swaymatch", argv[0]) == 0)) {
+        context.swaymode = 1;
+    }
+
     #define EXIT_MODE_ERROR(mode, option) \
         do { fprintf(stderr, option " can only be used in " mode "\n"); return 2; } while (0)
     const char *spath = NULL;

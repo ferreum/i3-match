@@ -16,15 +16,15 @@
 
 #include <stdarg.h>
 
-const char *i3ipc_get_env_sockpath(void) {
-    return getenv("I3SOCK");
+static const char *i3ipc_get_env_sockpath(int swaymode) {
+    return getenv(swaymode ? "SWAYSOCK" : "I3SOCK");
 }
 
-char *i3ipc_get_xcb_sockpath(void) {
+static char *i3ipc_get_xcb_sockpath(void) {
     return root_atom_contents("I3_SOCKET_PATH", NULL, 0);
 }
 
-char *i3ipc_get_cmd_sockpath(void) {
+static char *i3ipc_get_cmd_sockpath(int swaymode) {
     int fd_p[2];
     if (pipe(fd_p) == -1) {
         perror("pipe");
@@ -39,7 +39,7 @@ char *i3ipc_get_cmd_sockpath(void) {
         close(STDOUT_FILENO);
         dup2(fd_p[1], STDOUT_FILENO);
         close(fd_p[1]);
-        char *args[] = { "i3", "--get-socketpath", NULL };
+        char *args[] = { swaymode ? "sway" : "i3", "--get-socketpath", NULL };
         if (execvp("i3", args) == -1) {
             perror("execvp i3");
         }
@@ -50,6 +50,10 @@ char *i3ipc_get_cmd_sockpath(void) {
     default: {
         close(fd_p[1]);
         FILE *f = fdopen(fd_p[0], "r");
+        if (!f) {
+            perror("fdopen");
+            abort();
+        }
         char *line = read_line(f);
         fclose(f);
         return line;
@@ -57,28 +61,32 @@ char *i3ipc_get_cmd_sockpath(void) {
     }
 }
 
-const char *i3ipc_get_sockpath(char **a_path) {
+static const char *i3ipc_get_sockpath(char **a_path, int swaymode) {
     assert(a_path != NULL);
-    const char *path = i3ipc_get_env_sockpath();
+    const char *path = i3ipc_get_env_sockpath(swaymode);
     debug_print("env path=%s\n", path);
-    if (!path || !path[0]) {
+    if (path && *path) {
+        return path;
+    }
+    if (!swaymode) {
         path = *a_path = i3ipc_get_xcb_sockpath();
         debug_print("xcb path=%s\n", path);
-        if (!path) {
-            path = *a_path = i3ipc_get_cmd_sockpath();
-            debug_print("cmd path=%s\n", path);
-            if (!path) {
-                return NULL;
-            }
+        if (path && *path) {
+            return path;
         }
     }
-    return path;
+    path = *a_path = i3ipc_get_cmd_sockpath(swaymode);
+    debug_print("cmd path=%s\n", path);
+    if (path && *path) {
+        return path;
+    }
+    return NULL;
 }
 
-int i3ipc_open_socket(const char *path) {
+int i3ipc_open_socket(const char *path, int swaymode) {
     char *a_path = NULL;
     if (!path) {
-        path = i3ipc_get_sockpath(&a_path);
+        path = i3ipc_get_sockpath(&a_path, swaymode);
     }
     if (!path) {
         fprintf(stderr, "could not find socket\n");

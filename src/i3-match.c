@@ -615,7 +615,7 @@ argparse_finished: {}
             if (f) fclose(f);
         } else {
             set_default_sigchld_handler();
-            int sock = i3ipc_open_socket(spath);
+            int sock = i3ipc_open_socket(spath, context.swaymode);
             if (sock == -1) {
                 return 2;
             }
@@ -635,7 +635,7 @@ argparse_finished: {}
     }
     case MODE_SUBSCRIBE: {
         set_default_sigchld_handler();
-        int sock = i3ipc_open_socket(spath);
+        int sock = i3ipc_open_socket(spath, context.swaymode);
         if (sock == -1) {
             return 2;
         }

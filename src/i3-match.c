@@ -17,6 +17,7 @@
 #include "sb.h"
 
 #include <assert.h>
+#include <getopt.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>

@@ -85,11 +85,4 @@ typedef struct i3json_print_tree_context {
 
 extern void i3json_tree_accum_data(yajl_val node, iter_info *info, i3json_print_tree_context *context);
 
-extern void i3json_print_tree_node(FILE *stream, int selected,
-                                   yajl_val node, iter_info *info,
-                                   i3json_print_tree_context *context,
-                                   const char *text);
-
-extern void i3json_print_tree(FILE *stream, yajl_val tree, yajl_val selected);
-
 #endif /* _I3JSON_H_ */

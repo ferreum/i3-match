@@ -1,4 +1,3 @@
-
 #include "i3json.h"
 #include "jsonutil.h"
 #include "util.h"
@@ -244,18 +243,6 @@ yajl_val i3json_get_active_workspace(yajl_val tree) {
     }
 }
 
-static void printflag(FILE *stream, const char *flag, int value) {
-    if (!value) {
-        fprintf(stream, "-");
-    } else if (value == 1) {
-        fprintf(stream, "%s", flag);
-    } else if (value >= 10) {
-        fprintf(stream, "x");
-    } else {
-        fprintf(stream, "%d", value);
-    }
-}
-
 static int is_type(yajl_val node, const char *type) {
     const char *ykey[] = {"type", NULL};
     yajl_val tmp = yajl_tree_get(node, ykey, yajl_t_string);
@@ -297,70 +284,6 @@ void i3json_tree_accum_data(yajl_val node, iter_info *info, i3json_print_tree_co
         context->output = NULL;
     });
     context->prevlevel = info->level;
-}
-
-void i3json_print_tree_node(FILE *stream, int selected,
-                            yajl_val node, iter_info *info,
-                            i3json_print_tree_context *context,
-                            const char *text) {
-    int i;
-    char *indent = "--";
-    if (selected) {
-        indent = "==";
-    }
-    for (i = info->level; i > 0; i--) {
-        fprintf(stream, "%s", indent);
-    }
-    if (text) {
-        fprintf(stream, "%s\n", text);
-    } else {
-        char type;
-        {
-            const char *ykey[] = {"type", NULL};
-            yajl_val yo = yajl_tree_get(node, ykey, yajl_t_string);
-            const char *state = YAJL_GET_STRING(yo);
-            if (state && state[0]) {
-                type = state[0];
-            } else {
-                type = '?';
-            }
-        }
-        fprintf(stream, " ");
-        fprintf(stream, "%c", type);
-        printflag(stream, "s", context->scratch);
-        printflag(stream, "f", context->floating);
-        fprintf(stream, " ");
-        const char *ykey[] = {"name", NULL};
-        yajl_val nobj = yajl_tree_get(node, ykey, yajl_t_string);
-        const char *name = YAJL_GET_STRING(nobj);
-        if (!name) {
-            name = "";
-        }
-        fprintf(stream, "%s\n", name);
-    }
-}
-
-typedef struct {
-    FILE *stream;
-    yajl_val selected;
-    i3json_print_tree_context pt_context;
-} print_pred_args;
-
-static iter_advise print_pred(yajl_val node, iter_info *info, void *ptr) {
-    print_pred_args *args = ptr;
-    i3json_tree_accum_data(node, info, &args->pt_context);
-    i3json_print_tree_node(args->stream, node == args->selected,
-                           node, info, &args->pt_context, NULL);
-    return ITER_CONT;
-}
-
-extern void i3json_print_tree(FILE *stream, yajl_val tree, yajl_val selected) {
-    print_pred_args args = {
-        .stream = stream,
-        .selected = selected,
-        .pt_context = I3JSON_EMPTY_PRINT_TREE_CONTEXT,
-    };
-    i3json_iter_nodes(tree, &print_pred, &args);
 }
 
 static iter_advise i3json_iter_nodes_recurse(yajl_val tree, iter_info *info, i3json_iter_nodes_pred pred, void *ptr) {
@@ -420,4 +343,3 @@ iter_advise i3json_iter_nodes(yajl_val tree, i3json_iter_nodes_pred pred, void *
     iter_info info = { .level = 0, .floating = 0, .nodei = 0, .nodec = 1 };
     return i3json_iter_nodes_recurse(tree, &info, pred, ptr);
 }
-

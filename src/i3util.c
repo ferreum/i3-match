@@ -5,7 +5,6 @@
 #include "util.h"
 #include "debug.h"
 #include "base.h"
-#include "sockutil.h"
 
 #include <sys/socket.h>
 

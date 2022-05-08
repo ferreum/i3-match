@@ -42,10 +42,9 @@ static char *i3ipc_get_cmd_sockpath(int swaymode) {
         char *args[] = { swaymode ? "sway" : "i3", "--get-socketpath", NULL };
         if (execvp(swaymode ? "sway" : "i3", args) == -1) {
             perror(swaymode ? "execvp sway" : "execvp i3");
-            abort();
         }
         // not reached on success
-        assert(0);
+        abort();
         break;
     }
     default: {

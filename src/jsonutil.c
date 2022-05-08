@@ -8,7 +8,6 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <assert.h>
 
 extern void yajlutil_print_cb_sb_push(void *ctx, const char *str, size_t len) {
     string_builder *sb = ctx;
@@ -18,7 +17,7 @@ extern void yajlutil_print_cb_sb_push(void *ctx, const char *str, size_t len) {
 static void check_status(yajl_gen_status status) {
     if (status != yajl_gen_status_ok) {
         fprintf(stderr, "yajl_gen_status was %d\n", (int) status);
-        assert(0);
+        abort();
     }
 }
 
@@ -67,7 +66,7 @@ extern void yajlutil_serialize_val(yajl_gen gen, yajl_val val, int parse_numbers
         break;
     default:
         fprintf(stderr, "unexpectedly got type %d\n", (int) val->type);
-        assert(0);
+        abort();
     }
 }
 
@@ -93,7 +92,7 @@ extern char *yajlutil_get_string(yajl_val val) {
         return "";
     default:
         fprintf(stderr, "unexpectedly got type %d\n", (int) val->type);
-        assert(0);
+        abort();
     }
 }
 

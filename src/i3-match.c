@@ -340,7 +340,8 @@ static int eventloop(int sock, context *ctx) {
         case ITER_CONT:
             break;
         case ITER_NODESC:
-            assert(0);
+            fprintf(stderr, "invalid return value from process_node\n");
+            abort();
         }
     }
 cleanup:
@@ -556,7 +557,8 @@ int main(int argc, char *argv[]) {
             case '?':
                 return 2;
             default:
-                assert(0);
+                fprintf(stderr, "unhandled option: '%c'\n", c);
+                abort();
             }
         } else {
             have_modearg = 1;
@@ -666,7 +668,8 @@ argparse_finished: {}
         break;
     }
     default:
-        assert(0);
+        fprintf(stderr, "invalid operation mode\n");
+        abort();
     }
 
     debug_print("%s\n", "cleanup...");

@@ -3,7 +3,7 @@
 #include "util.h"
 #include "debug.h"
 
-#include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 
 struct operator {
@@ -108,7 +108,7 @@ extern int i3json_matcher_match_value(const char* value, i3json_matcher *matcher
     }
     default:
         fprintf(stderr, "basetype=%x\n", basetype);
-        assert(0);
+        abort();
     }
     if (matcher->type & MT_NOT) {
         result = !result;
@@ -275,7 +275,7 @@ static iter_advise i3json_iter_nodes_recurse(yajl_val tree, iter_info *info, i3j
                     break;
                 case ITER_NODESC:
                     // ITER_NODESC is never returned.
-                    assert(0);
+                    abort();
                 case ITER_ABORT:
                 case ITER_ABORT_SUCCESS:
                     return subadv;

@@ -8,7 +8,6 @@
 
 #include <sys/socket.h>
 
-#include <assert.h>
 #include <string.h>
 #include <unistd.h>
 

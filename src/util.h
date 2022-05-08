@@ -10,10 +10,6 @@ extern void set_default_sigchld_handler(void);
 
 extern char *read_line(FILE *f);
 
-extern int fork_exec(char **args);
-
-extern int sleep_ms(int ms);
-
 extern void push_whole_file(string_builder *sb, FILE *f);
 
 extern void print_error(char *msg, char *errbuf);

@@ -3,13 +3,8 @@
 #include "base.h"
 #include "debug.h"
 
-#include <assert.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
-#include <limits.h>
-#include <time.h>
 #include <signal.h>
 #include <sys/wait.h>
 
@@ -40,32 +35,6 @@ extern char *read_line(FILE *f) {
     }
     if (line) line[len] = '\0';
     return line;
-}
-
-extern int fork_exec(char **args) {
-    switch (fork()) {
-    case -1:
-        // failed
-        perror("fork");
-        return -1;
-    case 0: {
-        if (execvp(args[0], args) == -1) {
-            perror("execvp");
-        }
-        fprintf(stderr, "execvp failed");
-        exit(1);
-    }
-    default:
-        return 0;
-    }
-    assert(0);
-}
-
-extern int sleep_ms(int ms) {
-    struct timespec tp;
-    tp.tv_sec = ms / 1000;
-    tp.tv_nsec = (ms % 1000) * 1000000;
-    return nanosleep(&tp, NULL);
 }
 
 extern void push_whole_file(string_builder *sb, FILE *f) {

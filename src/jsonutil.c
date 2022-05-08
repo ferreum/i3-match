@@ -1,4 +1,3 @@
-
 #include "jsonutil.h"
 #include "util.h"
 #include "debug.h"
@@ -10,11 +9,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-
-static void print_cb_fwrite(void *ctx, const char *str, size_t len) {
-    FILE *f = ctx;
-    fwrite(str, 1, len, f);
-}
 
 extern void yajlutil_print_cb_sb_push(void *ctx, const char *str, size_t len) {
     string_builder *sb = ctx;
@@ -75,43 +69,6 @@ extern void yajlutil_serialize_val(yajl_gen gen, yajl_val val, int parse_numbers
         fprintf(stderr, "unexpectedly got type %d\n", (int) val->type);
         assert(0);
     }
-}
-
-extern void yajlutil_push_tree(string_builder *sb, yajl_val tree, int parse_numbers) {
-    yajl_gen gen;
-
-    gen = yajl_gen_alloc(NULL);
-    malloc_check(gen);
-
-    if (!yajl_gen_config(gen, yajl_gen_print_callback,
-                         yajlutil_print_cb_sb_push, sb)) {
-        fprintf(stderr, "yajl_gen_config failed\n");
-        assert(0);
-    }
-
-    yajlutil_serialize_val(gen, tree, parse_numbers);
-    yajl_gen_free(gen);
-}
-
-static void print_tree(FILE *f, yajl_val tree, int parse_numbers) {
-    yajl_gen gen;
-
-    gen = yajl_gen_alloc(NULL);
-    malloc_check(gen);
-
-    if (!yajl_gen_config(gen, yajl_gen_beautify, 1)
-        || !yajl_gen_config(gen, yajl_gen_validate_utf8, 1)
-        || !yajl_gen_config(gen, yajl_gen_print_callback, print_cb_fwrite, f)) {
-        fprintf(stderr, "yajl_gen_config failed\n");
-        assert(0);
-    }
-
-    yajlutil_serialize_val(gen, tree, parse_numbers);
-    yajl_gen_free(gen);
-}
-
-extern void dump_tree(FILE *stream, yajl_val tree) {
-    print_tree(stream, tree, 0);
 }
 
 extern char *yajlutil_get_string(yajl_val val) {
@@ -181,4 +138,3 @@ extern yajl_val yajlutil_path_get(yajl_val obj, const char *path, yajl_type type
         }
     }
 }
-

@@ -49,8 +49,6 @@ extern int i3json_parse_operator(const char *str);
 
 extern void i3json_make_matcher(const char *key, const char *pattern, unsigned int type, i3json_matcher *out);
 
-extern void i3json_matcher_print(FILE *stream, i3json_matcher *matcher);
-
 extern int i3json_matcher_match_value(const char* value, i3json_matcher *matcher);
 
 extern int i3json_matcher_match(yajl_val node, i3json_matcher *matchers);
@@ -64,12 +62,6 @@ extern int i3json_matchers_match_node(yajl_val node, int matcherc, i3json_matche
 extern yajl_val i3json_matchers_match_tree(yajl_val tree, int matcherc, i3json_matcher *matchers);
 
 extern int i3json_matcher_cmp_key(i3json_matcher *matcher, const char* key);
-
-extern yajl_val i3json_get_focus(yajl_val tree);
-
-extern int i3json_is_scratch(yajl_val node);
-
-extern yajl_val i3json_get_active_workspace(yajl_val tree);
 
 typedef struct i3json_print_tree_context {
     int prevlevel;

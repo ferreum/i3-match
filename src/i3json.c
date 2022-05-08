@@ -77,10 +77,6 @@ extern void i3json_make_matcher(const char *key, const char *pattern, unsigned i
     debug_print("matcher={" PRINT_MATCHER_FMT "}\n", PRINT_MATCHER_ARGS(out));
 }
 
-extern void i3json_matcher_print(FILE *stream, i3json_matcher *matcher) {
-    fprintf(stream, PRINT_MATCHER_FMT, PRINT_MATCHER_ARGS(matcher));
-}
-
 extern int i3json_matcher_match_value(const char* value, i3json_matcher *matcher) {
     if (!value) {
         // Treat missing value as empty string.
@@ -188,59 +184,11 @@ extern int i3json_matcher_cmp_key(i3json_matcher *matcher, const char* key) {
     return r;
 }
 
-static iter_advise focus_pred(yajl_val node, __unused iter_info *info, void *ptr) {
-    const char *ykey[] = {"focused", NULL};
-    yajl_val yo = yajl_tree_get(node, ykey, yajl_t_true);
-    if (YAJL_IS_TRUE(yo)) {
-        yajl_val *pmatch = ptr;
-        *pmatch = node;
-        return ITER_ABORT_SUCCESS;
-    } else {
-        return ITER_CONT;
-    }
-}
-
-yajl_val i3json_get_focus(yajl_val tree) {
-    yajl_val match = NULL;
-    if (i3json_iter_nodes(tree, &focus_pred, &match) == ITER_ABORT_SUCCESS) {
-        return match;
-    }
-    return NULL;
-}
-
-int i3json_is_scratch(yajl_val node) {
+static int i3json_is_scratch(yajl_val node) {
     const char *ykey[] = {"scratchpad_state", NULL};
     yajl_val yo = yajl_tree_get(node, ykey, yajl_t_string);
     const char *state = YAJL_GET_STRING(yo);
     return state && state[0] && strcmp(state, "none") != 0;
-}
-
-static iter_advise active_ws_pred(yajl_val node, __unused iter_info *info, void *ptr) {
-    const char *ykey[] = {"type", NULL};
-    yajl_val yo = yajl_tree_get(node, ykey, yajl_t_string);
-    const char *type = YAJL_GET_STRING(yo);
-    if (strcmp(type, "workspace") == 0) {
-        if (i3json_get_focus(node) != NULL) {
-            yajl_val *pws = ptr;
-            *pws = node;
-            return ITER_ABORT_SUCCESS;
-        } else {
-            return ITER_NODESC;
-        }
-    } else {
-        return ITER_CONT;
-    }
-}
-
-yajl_val i3json_get_active_workspace(yajl_val tree) {
-    yajl_val ws;
-    iter_advise adv = i3json_iter_nodes(tree, &active_ws_pred, &ws);
-    switch (adv) {
-    case ITER_ABORT_SUCCESS:
-        return ws;
-    default:
-        return NULL;
-    }
 }
 
 static int is_type(yajl_val node, const char *type) {

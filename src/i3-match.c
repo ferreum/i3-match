@@ -116,7 +116,7 @@ typedef struct context {
     yajl_gen sb_gen;
 } context;
 
-static const char *get_eventtype(unsigned int type) {
+static const char *eventtype2name(unsigned int type) {
     if ((type & I3_IPC_EVENT_MASK) != I3_IPC_EVENT_MASK) {
         return "none";
     }
@@ -200,7 +200,7 @@ static void push_value(string_builder *sb, const char* key,
     } else if (strcmp(":evtype", key) == 0) {
         i3_msg *msg = ctx->msg;
         if (msg) {
-            sb_push(sb, get_eventtype(msg->type));
+            sb_push(sb, eventtype2name(msg->type));
         } else {
             sb_pushn(sb, "none", 4);
         }

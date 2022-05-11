@@ -73,9 +73,9 @@ const char *EVENT_NAMES_SWAY[EVENT_TYPE_SWAY_COUNT] = {
 #define TREE_OUTPUTS_COUNT 2
 char *TREE_OUTPUTS[TREE_OUTPUTS_COUNT] = { ":itree", "name" };
 
-#define DEFAULT_MONITOR_OUTPUT_COUNT 7
+#define DEFAULT_MONITOR_OUTPUT_COUNT 8
 char *DEFAULT_MONITOR_OUTPUTS[DEFAULT_MONITOR_OUTPUT_COUNT] = {
-    ":evtype", "change", "current/name", "container/name", "binding/command", "payload", "input/identifier"
+    ":evtype", "change", "current/name", "container/name", "binding/command", "payload", "input/identifier", "id"
 };
 
 typedef enum mode {

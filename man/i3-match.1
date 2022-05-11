@@ -1,4 +1,4 @@
-.TH I3\-MATCH 1
+.TH I3\-MATCH 1 2022-05-11 "i3\-match" "i3\-match Manual"
 .SH NAME
 i3\-match \- match and query i3/sway window properties and events
 .SH SYNOPSIS
@@ -12,10 +12,9 @@ i3\-match \- match and query i3/sway window properties and events
 .RI [ option | filter ]...
 .RB [ \-o " \fIfield" \fR...]
 .SH DESCRIPTION
-.B i3\-match
-provides command\-line access to i3 window manager's IPC (interprocess
-communication) interface. Also works with \fBsway\fR(1); See \fISWAY MODE\fR
-below and \fBsway-ipc\fR(7).
+\fBi3\-match\fR provides command\-line access to i3 window manager's IPC
+interface. Also works with \fBsway\fR(1); See \fISWAY MODE\fR below and
+\fBsway\-ipc\fR(7).
 .PP
 .B i3\-match
 has two modes of operation: match\-mode and subscribe\-mode. In both modes,
@@ -23,19 +22,18 @@ filters are used to select nodes.
 .PP
 Match\-mode is the default, where nodes are containers/windows in the tree.
 .PP
-The option
-.B \-S
-enters subscribe\-mode, where nodes are events received via the \fBsubscribe\fR
-IPC feature. See also the \fB-m\fR option.
+The \fB\-S\fR option enables subscribe\-mode, where \fBi3\-match\fR listens for
+events via the \fBsubscribe\fR IPC feature. Each event is matched as a node.
+See also the \fB\-m\fR option.
 .SH OPTIONS
 .TP
 .B \-W
 Enable sway mode. Default when invoked as
 .BR swaymatch .
-Overrides a previous \fB-I\fR option. See \fISWAY MODE\fR below.
+Overrides a previous \fB\-I\fR option. See \fISWAY MODE\fR below.
 .TP
 .B \-I
-Disable sway mode. See \fISWAY MODE\fR below. Overrides a previous \fB-W\fR
+Disable sway mode. See \fISWAY MODE\fR below. Overrides a previous \fB\-W\fR
 option.
 .TP
 .B \-a
@@ -66,7 +64,7 @@ Read json tree from
 .I file
 instead of querying via i3 IPC. If
 .I file
-is a single dash ("\fB-\fR") read from stdin. Match\-mode only.
+is a single dash ("\fB\-\fR") read from stdin. Match\-mode only.
 .TP
 .BI \-l " num"
 Consider success after
@@ -170,7 +168,8 @@ Hierarchies of json objects are accessed using slashes ("\fB/\fR") as separator.
 Fields not found for a node are empty. There is no check for whether a field
 name is valid.
 .PP
-See i3 IPC documentation (https://i3wm.org/docs/ipc.html) for a list of fields.
+See i3 IPC documentation (https://i3wm.org/docs/ipc.html) and the \fIEVENTS\fR
+section in \fBsway\-ipc\fR(7) for a list of fields.
 .SS "Pseudo fields"
 .B i3\-match
 provides additional information for each node. Pseudo\-fields access this
@@ -265,8 +264,11 @@ is not given, this variable is used to determine the path of i3's IPC socket,
 overriding the usual lookup.
 .TP
 .B SWAYSOCK
-If set and \fB-I\fR is not specified, sway mode is enabled. In sway mode, this
-variable is used instead of \fBI3SOCK\fR. See \fISWAY MODE\fR blow.
+If set to a non\-empty value and the \fB\-I\fR option is not specified, sway mode
+is enabled.
+.sp
+In sway mode, this variable is used instead of \fBI3SOCK\fR. See
+\fISWAY MODE\fR blow.
 .SH "EXIT STATUS"
 The exit status is 0 on success, 1 if success condition was not met and
 2 if an error occurred.
@@ -277,25 +279,25 @@ In subscribe\-mode
 .B i3\-match
 exits on success, so the exit status is always 0 unless an error occurred.
 .SH "SWAY MODE"
-If the \fB-W\fR option is enabled, or the program is invoked as \fBswaymatch\fR,
-or the \fBSWAYSOCK\fR environment variable is set to a non-empty string, sway
-mode is enabled unless the \fB-I\fR option is specified.
-Sway mode enables full compatibility with the \fBsway\fR(1) compositor.
+If the \fB\-W\fR option is enabled, or the program is invoked as
+\fBswaymatch\fR, or the \fBSWAYSOCK\fR environment variable is set to a
+non\-empty string, sway mode is enabled unless the \fB\-I\fR option is in
+effect. Sway mode enables full compatibility with the \fBsway\fR(1) compositor.
 .sp
 Sway mode has the following effects:
 .RS 4
 .P
 The set of events in subscribe mode is changed to those supported by
 \fBsway\fR(1). See the \fB:evtype\fR \fIFIELD\fR above. See also the
-\fBSUBSCRIBE\fR message and \fIEVENTS\fR section in \fBsway-ipc\fR(7).
+\fBSUBSCRIBE\fR message and \fIEVENTS\fR section in \fBsway\-ipc\fR(7).
 .P
 The \fBSWAYSOCK\fR environment variable is used to find the socket path instead
 of \fBI3SOCK\fR. See \fIENVIRONMENT VARIABLES\fR above.
 .P
-The command \fBsway --get-socketpath\fR is used instead of \fBi3
---get-socketpath\fR as the last resort method to find the socket path. Note
+The command \fBsway \-\-get\-socketpath\fR is used instead of \fBi3
+\-\-get\-socketpath\fR as the last resort method to find the socket path. Note
 that since \fBsway\fR also uses the \fBSWAYSOCK\fR environment variable, this
-will likely fail, as of \fBsway 1.7\fR.
+will likely fail, as of \fBsway\fR version \fB1.7\fR.
 .SH EXAMPLES
 .TP
 .B i3\-match \-t
@@ -320,4 +322,4 @@ Print the name of the focused window every time it changes.
 
 .SH SEE ALSO
 .P
-.BR i3 (1) " sway" (1)  " sway-ipc" (7)
+.BR i3 (1) " sway" (1)  " sway\-ipc" (7)

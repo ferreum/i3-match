@@ -65,7 +65,6 @@ const char *EVENT_NAMES[EVENT_TYPE_COUNT] = {
 };
 #define EVENT_TYPE_SWAY_COUNT 2
 #define EVENT_TYPE_SWAY_OFFSET 0x14
-#define EVENT_TYPE_SWAY_FIRST (I3_IPC_EVENT_MASK | EVENT_TYPE_SWAY_COUNT)
 const char *EVENT_NAMES_SWAY[EVENT_TYPE_SWAY_COUNT] = {
     "bar_state_update", // (I3_IPC_EVENT_MASK | 0x14)
     "input", // (I3_IPC_EVENT_MASK | 0x15)
@@ -121,7 +120,7 @@ static const char *eventtype2name(unsigned int type) {
         return "none";
     }
     unsigned int i = type & ~I3_IPC_EVENT_MASK;
-    if (i >= EVENT_TYPE_SWAY_FIRST) {
+    if (i >= EVENT_TYPE_SWAY_OFFSET) {
         i -= EVENT_TYPE_SWAY_OFFSET;
         if (i < EVENT_TYPE_SWAY_COUNT) {
             return EVENT_NAMES_SWAY[i];

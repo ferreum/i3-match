@@ -1,4 +1,4 @@
-I3-MATCH(1)                 General Commands Manual                I3-MATCH(1)
+I3-MATCH(1)                     i3-match Manual                    I3-MATCH(1)
 
 NAME
        i3-match - match and query i3/sway window properties and events
@@ -9,18 +9,18 @@ SYNOPSIS
        swaymatch [-S] [option|filter]...  [-o field...]
 
 DESCRIPTION
-       i3-match  provides  command-line access to i3 window manager's IPC (in‐
-       terprocess communication) interface. Also works with sway(1); See  SWAY
-       MODE below and sway-ipc(7).
+       i3-match provides command-line access to i3 window manager's IPC inter‐
+       face. Also works with sway(1); See SWAY MODE below and sway-ipc(7).
 
-       i3-match  has two modes of operation: match-mode and subscribe-mode. In
+       i3-match has two modes of operation: match-mode and subscribe-mode.  In
        both modes, filters are used to select nodes.
 
-       Match-mode is the default, where nodes are  containers/windows  in  the
+       Match-mode  is  the  default, where nodes are containers/windows in the
        tree.
 
-       The  option  -S  enters subscribe-mode, where nodes are events received
-       via the subscribe IPC feature. See also the -m option.
+       The -S option enables subscribe-mode, where i3-match listens for events
+       via  the  subscribe  IPC feature. Each event is matched as a node.  See
+       also the -m option.
 
 OPTIONS
        -W     Enable sway mode. Default when invoked as swaymatch.   Overrides
@@ -53,7 +53,7 @@ OPTIONS
        -m     Keep monitoring for events infinitely. Specifying -n after  this
               option  overrides  this  effect.  Sets printed fields to :evtype
               change current/name container/name binding/command  payload  in‐
-              put/identifier unless -o is given.  Subscribe-mode only.
+              put/identifier id unless -o is given.  Subscribe-mode only.
 
        -n num In  match-mode:  Exit  after  printing  num  nodes. If no output
               fields are selected, this option is ignored (you may want -l in‐
@@ -105,8 +105,8 @@ FIELDS
        Fields not found for a node are empty. There is no check for whether  a
        field name is valid.
 
-       See i3 IPC documentation (https://i3wm.org/docs/ipc.html) for a list of
-       fields.
+       See  i3  IPC  documentation  (https://i3wm.org/docs/ipc.html)  and  the
+       EVENTS section in sway-ipc(7) for a list of fields.
 
    Pseudo fields
        i3-match provides additional information for each  node.  Pseudo-fields
@@ -186,9 +186,11 @@ ENVIRONMENT VARIABLES
               lookup.
 
        SWAYSOCK
-              If set and -I is not specified, sway mode is  enabled.  In  sway
-              mode,  this  variable  is  used instead of I3SOCK. See SWAY MODE
-              blow.
+              If set to a non-empty value and the -I option is not  specified,
+              sway mode is enabled.
+
+              In  sway mode, this variable is used instead of I3SOCK. See SWAY
+              MODE blow.
 
 EXIT STATUS
        The exit status is 0 on success, 1 if success condition was not met and
@@ -200,7 +202,7 @@ EXIT STATUS
 SWAY MODE
        If the -W option is enabled, or the program is invoked as swaymatch, or
        the  SWAYSOCK  environment  variable is set to a non-empty string, sway
-       mode is enabled unless the -I option is specified.  Sway  mode  enables
+       mode is enabled unless the -I option is in effect.  Sway  mode  enables
        full compatibility with the sway(1) compositor.
 
        Sway mode has the following effects:
@@ -215,7 +217,7 @@ SWAY MODE
            The command sway --get-socketpath is used instead of i3 --get-sock‐
            etpath as the last resort method to find the socket path. Note that
            since sway also uses the SWAYSOCK environment variable,  this  will
-           likely fail, as of sway 1.7.
+           likely fail, as of sway version 1.7.
 
 EXAMPLES
        i3-match -t
@@ -241,4 +243,4 @@ EXAMPLES
 SEE ALSO
        i3(1) sway(1) sway-ipc(7)
 
-                                                                   I3-MATCH(1)
+i3-match                          2022-05-11                       I3-MATCH(1)

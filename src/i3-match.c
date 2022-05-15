@@ -1,11 +1,7 @@
 /*
- * A program for matching containers in the i3 window manager.
+ * Match and query i3/sway window properties and events.
  *
- * needed libraries: yajl
- *
- * Created:     2014-03-11
- * Last Change: 2014-03-14
- *
+ * needed libraries: json-c
  */
 
 #include "i3util.h"
@@ -15,6 +11,8 @@
 #include "jsonutil.h"
 #include "util.h"
 #include "sb.h"
+
+#include <json-c/json_tokener.h>
 
 #include <assert.h>
 #include <getopt.h>
@@ -111,8 +109,6 @@ typedef struct context {
     int matchcount;
     i3json_print_tree_context pt_context;
     i3_msg *msg;
-    // yajl generator on sb.
-    yajl_gen sb_gen;
 } context;
 
 static const char *eventtype2name(unsigned int type) {
@@ -131,23 +127,8 @@ static const char *eventtype2name(unsigned int type) {
     return "unknown";
 }
 
-static yajl_gen get_sb_gen(context *context) {
-    yajl_gen gen = context->sb_gen;
-    if (!gen) {
-        gen = yajl_gen_alloc(NULL);
-        malloc_check(gen);
-        int res = yajl_gen_config(gen, yajl_gen_print_callback,
-                                  yajlutil_print_cb_sb_push, &context->sb);
-        assert(res);
-        context->sb_gen = gen;
-    } else {
-        yajl_gen_reset(gen, NULL);
-    }
-    return gen;
-}
-
 static void push_value(string_builder *sb, const char* key,
-                       yajl_val node, iter_info *info,
+                       json_object *node, iter_info *info,
                        context *ctx, int match) {
     debug_print("key=%s\n", key);
     if (strcmp(":match", key) == 0) {
@@ -208,28 +189,28 @@ static void push_value(string_builder *sb, const char* key,
     } else if (strcmp(":matchc", key) == 0) {
         sb_pushf(sb, "%d", ctx->matchcount);
     } else if (strncmp(":json", key, 5) == 0 && (key[5] == '\0' || key[5] == ':')) {
-        yajl_val n = node;
+        json_object *n = node;
         if (key[5]) {
-            n = yajlutil_path_get(node, key + 6, yajl_t_any);
+            n = jsonutil_path_get(node, key + 6);
         }
         if (n) {
-            yajlutil_serialize_val(get_sb_gen(ctx), n, 0);
+            sb_push(sb, json_object_to_json_string_ext(n, JSON_C_TO_STRING_PLAIN));
         } else {
             sb_pushn(sb, "null", 4);
         }
     } else {
-        yajl_val n = yajlutil_path_get(node, key, yajl_t_any);
-        const char *str = yajlutil_get_string(n);
-        if (str) {
-            sb_push(sb, str);
-        } else {
+        json_object *n = jsonutil_path_get(node, key);
+        const char *str = jsonutil_get_string(n);
+        if (!str) {
             // n is array or object
-            yajlutil_serialize_val(get_sb_gen(ctx), n, 0);
+            str = json_object_to_json_string_ext(n, JSON_C_TO_STRING_PLAIN);
+            malloc_check(str);
         }
+        sb_push(sb, str);
     }
 }
 
-static void format_fields(yajl_val node, iter_info *info, context *ctx, int match) {
+static void format_fields(json_object *node, iter_info *info, context *ctx, int match) {
     int i;
     string_builder *sb = &ctx->sb;
     if (match && ctx->flags & F_HIGHLIGHT) {
@@ -255,7 +236,7 @@ static void accum_itree(iter_info *info, context *context) {
 }
 
 typedef struct node_getter_args {
-    yajl_val node;
+    json_object *node;
     iter_info *info;
     context *ctx;
 } node_getter_args;
@@ -268,7 +249,7 @@ static const char *node_value_getter(const char *key, void *ptr) {
     return sb->buf;
 }
 
-static iter_advise process_node(yajl_val node, iter_info *info, context *ctx) {
+static iter_advise process_node(json_object *node, iter_info *info, context *ctx) {
     ++ctx->objcount;
     node_getter_args gargs = {
         .node = node,
@@ -302,7 +283,7 @@ static iter_advise process_node(yajl_val node, iter_info *info, context *ctx) {
     return ITER_CONT;
 }
 
-static iter_advise iter_pred(yajl_val node, iter_info *info, void *ptr) {
+static iter_advise iter_pred(json_object *node, iter_info *info, void *ptr) {
     context *ctx = ptr;
     i3json_tree_accum_data(node, info, &ctx->pt_context);
     return process_node(node, info, ctx);
@@ -310,25 +291,25 @@ static iter_advise iter_pred(yajl_val node, iter_info *info, void *ptr) {
 
 static int eventloop(int sock, context *ctx) {
     i3_msg msg = EMPTY_I3_MSG;
-    yajl_val event = NULL;
-    char errbuf[ERROR_BUFSIZ];
+    ctx->msg = &msg;
     // iter_info values not meaningful for events
     iter_info info = { 0, 0, 0, 0, 0 };
-    ctx->msg = &msg;
+    json_tokener *tokener = json_tokener_new();
     int status = 0;
     for (;;) {
         if (i3ipc_recv_message(sock, &msg) == -1) {
-            del_i3_msg(&msg);
-            return 2;
+            status = 2;
+            goto cleanup;
         }
-        event = yajl_tree_parse(msg.data, errbuf, sizeof(errbuf));
+        json_tokener_reset(tokener);
+        json_object *event = json_tokener_parse_ex(tokener, msg.data, msg.len);
         if (!event) {
-            print_error("parse error", errbuf);
+            jsonutil_print_error("event parse error", json_tokener_get_error(tokener));
+            // continue matching against NULL value
         }
         iter_advise advise = process_node(event, &info, ctx);
-        yajl_tree_free(event);
+        json_object_put(event);
         i3ipc_msg_recycle(&msg);
-        event = NULL;
         switch (advise) {
         case ITER_ABORT_SUCCESS:
             status = 0;
@@ -344,6 +325,7 @@ static int eventloop(int sock, context *ctx) {
         }
     }
 cleanup:
+    json_tokener_free(tokener);
     del_i3_msg(&msg);
     ctx->msg = NULL;
     return status;
@@ -362,16 +344,10 @@ static int match_evtype_only(i3json_matcher *matchers, int matcherc, const char 
     return 1;
 }
 
-static char *get_matching_evtypes(i3json_matcher *matchers, int matcherc, int swaymode) {
-    string_builder sb = EMPTY_STRING_BUILDER;
-    yajl_gen gen = yajl_gen_alloc(NULL);
-    malloc_check(gen);
-    int res = yajl_gen_config(gen, yajl_gen_print_callback,
-                              yajlutil_print_cb_sb_push, &sb);
-    assert(res);
+static json_object *get_matching_evtypes(i3json_matcher *matchers, int matcherc, int swaymode) {
     int i;
-    int matches = 0;
-    yajl_gen_array_open(gen);
+    json_object *array = json_object_new_array();
+    malloc_check(array);
     for (i = 0; i < EVENT_TYPE_COUNT + EVENT_TYPE_SWAY_COUNT; i++) {
         if (swaymode) {
             // no output events on sway
@@ -383,18 +359,11 @@ static char *get_matching_evtypes(i3json_matcher *matchers, int matcherc, int sw
         const char *name = i < EVENT_TYPE_COUNT ? EVENT_NAMES[i]
              : EVENT_NAMES_SWAY[i - EVENT_TYPE_COUNT];
         if (match_evtype_only(matchers, matcherc, name)) {
-            ++matches;
             debug_print("%s matches\n", name);
-            yajl_gen_string(gen, (const unsigned char *) name, strlen(name));
+            json_object_array_add(array, json_object_new_string(name));
         }
     }
-    yajl_gen_array_close(gen);
-    yajl_gen_free(gen);
-    if (!matches) {
-        sb_free(&sb);
-        return NULL;
-    }
-    return sb_disown(&sb);
+    return array;
 }
 
 int main(int argc, char *argv[]) {
@@ -417,7 +386,6 @@ int main(int argc, char *argv[]) {
         .itree = SB_WITH_EXT_BUF(itree, SMALL_ITREE_SIZE),
         .matchcount = 0,
         .pt_context = I3JSON_EMPTY_PRINT_TREE_CONTEXT,
-        .sb_gen = NULL,
     };
 
     debug_print("BUFSIZ=%d\n", BUFSIZ);
@@ -581,7 +549,7 @@ argparse_finished: {}
         }
         string_builder buf = EMPTY_STRING_BUILDER;
         i3_msg msg = EMPTY_I3_MSG;
-        yajl_val tree = NULL;
+        json_object *tree = NULL;
         if (infile) {
             FILE *stream = NULL;
             FILE *f = NULL;
@@ -605,10 +573,10 @@ argparse_finished: {}
                 if (f) fclose(f);
                 return 2;
             }
-            char errbuf[ERROR_BUFSIZ];
-            tree = yajl_tree_parse(buf.buf, errbuf, sizeof(errbuf));
+            enum json_tokener_error error;
+            json_object *tree = json_tokener_parse_verbose(buf.buf, &error);
             if (!tree) {
-                print_error("json error", errbuf);
+                jsonutil_print_error("tree parse error", error);
                 sb_free(&buf);
                 if (f) fclose(f);
                 return 2;
@@ -628,7 +596,7 @@ argparse_finished: {}
             close(sock);
         }
         i3json_iter_nodes(tree, &iter_pred, &context);
-        yajl_tree_free(tree);
+        json_object_put(tree);
         del_i3_msg(&msg);
         sb_free(&buf);
         result = context.matchcount >= mincount ? 0 : 1;
@@ -642,25 +610,28 @@ argparse_finished: {}
         }
         {
             const char *body = NULL;
-            char *astr = NULL;
+            json_object *tmparray = NULL;
             if (context.flags & F_PRINTALL && !almostall) {
                 body = context.swaymode ? ALL_EVENTS_SUB_JSON_SWAY
-                     : ALL_EVENTS_SUB_JSON_I3;
+                    : ALL_EVENTS_SUB_JSON_I3;
             } else {
-                body = astr = get_matching_evtypes(
+                tmparray = get_matching_evtypes(
                      context.matchers, context.matcherc, context.swaymode);
-                if (!body) {
+                if (!json_object_array_length(tmparray)) {
                     fprintf(stderr, ":evtype never matches\n");
+                    json_object_put(tmparray);
                     return 2;
                 }
+                body = json_object_to_json_string_ext(
+                    tmparray, JSON_C_TO_STRING_PLAIN);
             }
             debug_print("body=%s\n", body);
-            if (i3util_subscribe(sock, body) == -1) {
+            int res = i3util_subscribe(sock, body);
+            json_object_put(tmparray);
+            if (res == -1) {
                 fprintf(stderr, "subscribe request failed\n");
-                free(astr);
                 return 2;
             }
-            free(astr);
         }
         result = eventloop(sock, &context);
         close(sock);
@@ -672,9 +643,6 @@ argparse_finished: {}
     }
 
     debug_print("%s\n", "cleanup...");
-    if (context.sb_gen) {
-        yajl_gen_free(context.sb_gen);
-    }
     sb_free(&context.itree);
     sb_free(&context.sb);
     free(aoutputs);

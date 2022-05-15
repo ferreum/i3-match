@@ -6,12 +6,14 @@
 #include "debug.h"
 #include "base.h"
 
+#include <json-c/json_tokener.h>
+
 #include <sys/socket.h>
 
 #include <string.h>
 #include <unistd.h>
 
-extern int i3util_request_json(int sock, unsigned long type, char *data, i3_msg *msg, yajl_val *jobj) {
+extern int i3util_request_json(int sock, unsigned long type, char *data, i3_msg *msg, json_object **jobj) {
     debug_print("%s\n", "sending...");
     if (i3ipc_send_message(sock, type, data) == -1) {
         perror("i3ipc_send_message");
@@ -28,11 +30,11 @@ extern int i3util_request_json(int sock, unsigned long type, char *data, i3_msg 
         del_i3_msg(msg);
         return -1;
     }
-    char errbuf[ERROR_BUFSIZ];
-    *jobj = yajl_tree_parse(msg->data, errbuf, sizeof(errbuf));
+    enum json_tokener_error error;
+    *jobj = json_tokener_parse_verbose(msg->data, &error);
     if (!*jobj) {
         msg->status = ST_INVALID_RESPONSE;
-        print_error("parse error", errbuf);
+        jsonutil_print_error("response parse error", error);
         return -1;
     }
     return 0;
@@ -44,16 +46,18 @@ extern int i3util_subscribe(int sock, const char *data) {
         return -1;
     }
     // check subscribe success
-    char errbuf[ERROR_BUFSIZ];
-    yajl_val resp = yajl_tree_parse(msg.data, errbuf, sizeof(errbuf));
+    enum json_tokener_error error;
+    json_object *resp = json_tokener_parse_verbose(msg.data, &error);
     int success = 0;
     if (!resp) {
-        print_error("parse error", errbuf);
+        jsonutil_print_error("subscribe response parse error", error);
     } else {
-        const char *path[] = {"success", NULL};
-        yajl_val val = yajl_tree_get(resp, path, yajl_t_true);
-        success = YAJL_IS_TRUE(val);
-        yajl_tree_free(resp);
+        json_object *val;
+        if (json_object_object_get_ex(resp, "success", &val)
+            && json_object_is_type(val, json_type_boolean)) {
+            success = json_object_get_boolean(val);
+        }
+        json_object_put(resp);
     }
     del_i3_msg(&msg);
     return success ? 0 : -1;

@@ -76,15 +76,15 @@ char *DEFAULT_MONITOR_OUTPUTS[DEFAULT_MONITOR_OUTPUT_COUNT] = {
     ":evtype", "change", "current/name", "container/name", "binding/command", "payload", "input/identifier", "id"
 };
 
-typedef enum mode {
+enum mode {
     MODE_MATCH = 0,
     MODE_SUBSCRIBE = 1,
-} mode;
+};
 
-typedef enum outmode {
+enum outmode {
     OUT_NONE = 0,
     OUT_FIELDS = 1,
-} outmode;
+};
 
 enum flags {
     F_PRINTALL = 1<<0,
@@ -92,10 +92,10 @@ enum flags {
     F_FLUSH = 1<<2,
 };
 
-typedef struct context {
+struct context {
     i3json_matcher *matchers;
     int matcherc;
-    outmode outmode;
+    enum outmode outmode;
     char **outputs;
     int outputc;
     int flags;
@@ -109,7 +109,7 @@ typedef struct context {
     int matchcount;
     i3json_print_tree_context pt_context;
     i3_msg *msg;
-} context;
+};
 
 static const char *eventtype2name(unsigned int type) {
     if ((type & I3_IPC_EVENT_MASK) != I3_IPC_EVENT_MASK) {
@@ -129,7 +129,7 @@ static const char *eventtype2name(unsigned int type) {
 
 static void push_value(string_builder *sb, const char* key,
                        json_object *node, iter_info *info,
-                       context *ctx, int match) {
+                       struct context *ctx, int match) {
     debug_print("key=%s\n", key);
     if (strcmp(":match", key) == 0) {
         sb_pushf(sb, "%d", !!match);
@@ -210,7 +210,7 @@ static void push_value(string_builder *sb, const char* key,
     }
 }
 
-static void format_fields(json_object *node, iter_info *info, context *ctx, int match) {
+static void format_fields(json_object *node, iter_info *info, struct context *ctx, int match) {
     int i;
     string_builder *sb = &ctx->sb;
     if (match && ctx->flags & F_HIGHLIGHT) {
@@ -226,7 +226,7 @@ static void format_fields(json_object *node, iter_info *info, context *ctx, int 
     }
 }
 
-static void accum_itree(iter_info *info, context *context) {
+static void accum_itree(iter_info *info, struct context *context) {
     sb_trunc(&context->itree, info->level);
     char ch = CH_SPACE;
     if (info->level && info->nodei < info->nodec - 1) {
@@ -235,23 +235,23 @@ static void accum_itree(iter_info *info, context *context) {
     sb_pushn(&context->itree, &ch, 1);
 }
 
-typedef struct node_getter_args {
+struct node_getter_args {
     json_object *node;
     iter_info *info;
-    context *ctx;
-} node_getter_args;
+    struct context *ctx;
+};
 
 static const char *node_value_getter(const char *key, void *ptr) {
-    node_getter_args *args = ptr;
+    struct node_getter_args *args = ptr;
     string_builder *sb = &args->ctx->sb;
     sb_trunc(sb, 0);
     push_value(sb, key, args->node, args->info, args->ctx, 1);
     return sb->buf;
 }
 
-static iter_advise process_node(json_object *node, iter_info *info, context *ctx) {
+static iter_advise process_node(json_object *node, iter_info *info, struct context *ctx) {
     ++ctx->objcount;
-    node_getter_args gargs = {
+    struct node_getter_args gargs = {
         .node = node,
         .info = info,
         .ctx = ctx,
@@ -284,12 +284,12 @@ static iter_advise process_node(json_object *node, iter_info *info, context *ctx
 }
 
 static iter_advise iter_pred(json_object *node, iter_info *info, void *ptr) {
-    context *ctx = ptr;
+    struct context *ctx = ptr;
     i3json_tree_accum_data(node, info, &ctx->pt_context);
     return process_node(node, info, ctx);
 }
 
-static int eventloop(int sock, context *ctx) {
+static int eventloop(int sock, struct context *ctx) {
     i3_msg msg = EMPTY_I3_MSG;
     ctx->msg = &msg;
     // iter_info values not meaningful for events
@@ -371,7 +371,7 @@ int main(int argc, char *argv[]) {
 
     #define SMALL_ITREE_SIZE 16
     char itree[SMALL_ITREE_SIZE];
-    context context = {
+    struct context context = {
         .matchers = matchers,
         .matcherc = 0,
         .outmode = OUT_NONE,
@@ -402,7 +402,7 @@ int main(int argc, char *argv[]) {
     #define EXIT_MODE_ERROR(mode, option) \
         do { fprintf(stderr, option " can only be used in " mode "\n"); return 2; } while (0)
     const char *spath = NULL;
-    mode mode = MODE_MATCH;
+    enum mode mode = MODE_MATCH;
     int almostall = 0, mincount = 1, printtree = 0;
     char **aoutputs = NULL;
     int c;
@@ -449,23 +449,23 @@ int main(int argc, char *argv[]) {
                 break;
             case 'l': {
                 if (mode != MODE_MATCH) EXIT_MODE_ERROR("match-mode", "-l");
-                int i, c;
-                if (sscanf(optarg, "%d%n", &i, &c) < 1 || optarg[c] != 0) {
+                int value, count;
+                if (sscanf(optarg, "%d%n", &value, &count) < 1 || optarg[count] != '\0') {
                     fprintf(stderr, "invalid min count (-l) - %s\n", optarg);
                     return 2;
                 }
                 have_modearg = 1;
-                mincount = i;
+                mincount = value;
                 break;
             }
             case 'n': {
-                int i, c;
-                if (sscanf(optarg, "%d%n", &i, &c) < 1 || optarg[c] != 0) {
+                int value, count;
+                if (sscanf(optarg, "%d%n", &value, &count) < 1 || optarg[count] != '\0') {
                     fprintf(stderr, "invalid max count (-n) - %s\n", optarg);
                     return 2;
                 }
                 have_modearg = 1;
-                context.maxcount = i;
+                context.maxcount = value;
                 break;
             }
             case 'd':

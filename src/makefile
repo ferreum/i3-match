@@ -3,6 +3,8 @@ SRCDIR = .
 
 TARGETS = i3-match
 
+LIBS = json-c xcb-util
+
 SRCS = $(shell find $(SRCDIR) -name '*.c')
 
 OBJS = $(patsubst %.c,%.o,$(SRCS))
@@ -14,10 +16,11 @@ TARGET_OBJS = $(patsubst %,$(SRCDIR)/%.o,$(TARGETS))
 SHARE_OBJS = $(filter-out $(TARGET_OBJS),$(OBJS))
 
 CFLAGS += -Wall -pedantic -Wextra -Wshadow -Wpointer-arith -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes -Wformat -Werror=format-security
-LDFLAGS += -lxcb -lxcb-util
 
-CFLAGS += $(shell pkg-config --cflags json-c)
-LDFLAGS += $(shell pkg-config --libs json-c)
+CFLAGS += $(shell pkg-config --cflags $(LIBS))
+
+LDFLAGS += $(shell pkg-config --libs-only-other --libs-only-L $(LIBS))
+LD_LIBS = $(shell pkg-config --libs-only-l $(LIBS))
 
 ifdef ASCII_TREE
 CFLAGS += -DASCII_TREE
@@ -56,10 +59,7 @@ makefile.depend: $(SRCS)
 -include makefile.depend
 
 i3-match: $(SRCDIR)/i3-match.o $(SHARE_OBJS)
-	$(CC) $(LDFLAGS) -o $@ $(patsubst %,$(SRCDIR)/%.o,$@) $(SHARE_OBJS) $(I3LIBS)
+	$(CC) -o $@ $(LDFLAGS) $(patsubst %,$(SRCDIR)/%.o,$@) $(SHARE_OBJS) $(LD_LIBS)
 
 swaymatch: i3-match
 	ln -sfTr i3-match swaymatch
-
-$(SRCDIR)/%.o: $(SRCDIR)/%.c
-	$(CC) $(CFLAGS) -c -o $@ $<

@@ -194,19 +194,27 @@ static void push_value(string_builder *sb, const char* key,
             n = jsonutil_path_get(node, key + 6);
         }
         if (n) {
-            sb_push(sb, json_object_to_json_string_ext(n, JSON_C_TO_STRING_PLAIN));
+            size_t len;
+            const char *str = json_object_to_json_string_length(
+                 n, JSON_C_TO_STRING_PLAIN, &len);
+            malloc_check(str);
+            sb_pushn(sb, str, len);
         } else {
             sb_pushn(sb, "null", 4);
         }
     } else {
         json_object *n = jsonutil_path_get(node, key);
         const char *str = jsonutil_get_string(n);
+        size_t len;
         if (!str) {
             // n is array or object
-            str = json_object_to_json_string_ext(n, JSON_C_TO_STRING_PLAIN);
+            str = json_object_to_json_string_length(
+                 n, JSON_C_TO_STRING_PLAIN, &len);
             malloc_check(str);
+        } else {
+            len = json_object_get_string_len(n);
         }
-        sb_push(sb, str);
+        sb_pushn(sb, str, len);
     }
 }
 

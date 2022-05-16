@@ -205,16 +205,16 @@ static void push_value(string_builder *sb, const char* key,
     } else {
         json_object *n = jsonutil_path_get(node, key);
         const char *str = jsonutil_get_string(n);
-        size_t len;
         if (!str) {
             // n is array or object
+            size_t len;
             str = json_object_to_json_string_length(
                  n, JSON_C_TO_STRING_PLAIN, &len);
             malloc_check(str);
+            sb_pushn(sb, str, len);
         } else {
-            len = json_object_get_string_len(n);
+            sb_push(sb, str);
         }
-        sb_pushn(sb, str, len);
     }
 }
 

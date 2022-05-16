@@ -10,6 +10,7 @@
 
 #include <sys/socket.h>
 
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -30,14 +31,17 @@ extern int i3util_request_json(int sock, unsigned long type, char *data, i3_msg 
         del_i3_msg(msg);
         return -1;
     }
-    enum json_tokener_error error;
-    *jobj = json_tokener_parse_verbose(msg->data, &error);
+    json_tokener *tok = json_tokener_new_ex(JSON_TOKENER_DEPTH);
+    malloc_check(tok);
+    *jobj = json_tokener_parse_ex(tok, msg->data, msg->len);
+    int result = 0;
     if (!*jobj) {
         msg->status = ST_INVALID_RESPONSE;
-        jsonutil_print_error("response parse error", error);
-        return -1;
+        jsonutil_print_error("response parse error", json_tokener_get_error(tok));
+        result = -1;
     }
-    return 0;
+    json_tokener_free(tok);
+    return result;
 }
 
 extern int i3util_subscribe(int sock, const char *data) {

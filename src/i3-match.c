@@ -294,7 +294,8 @@ static int eventloop(int sock, struct context *ctx) {
     ctx->msg = &msg;
     // iter_info values not meaningful for events
     iter_info info = { 0, 0, 0, 0, 0 };
-    json_tokener *tokener = json_tokener_new();
+    json_tokener *tokener = json_tokener_new_ex(JSON_TOKENER_DEPTH);
+    malloc_check(tokener);
     int status = 0;
     for (;;) {
         if (i3ipc_recv_message(sock, &msg) == -1) {
@@ -573,14 +574,17 @@ argparse_finished: {}
                 if (f) fclose(f);
                 return 2;
             }
-            enum json_tokener_error error;
-            tree = json_tokener_parse_verbose(buf.buf, &error);
+            json_tokener *tok = json_tokener_new_ex(JSON_TOKENER_DEPTH);
+            malloc_check(tok);
+            tree = json_tokener_parse_ex(tok, buf.buf, buf.len);
             if (!tree) {
-                jsonutil_print_error("tree parse error", error);
+                jsonutil_print_error("tree parse error", json_tokener_get_error(tok));
+                json_tokener_free(tok);
                 sb_free(&buf);
                 if (f) fclose(f);
                 return 2;
             }
+            json_tokener_free(tok);
             if (f) fclose(f);
         } else {
             set_default_sigchld_handler();

@@ -7,6 +7,6 @@
 
 #define __unused __attribute__((unused))
 
-#define ERROR_BUFSIZ 512
+#define JSON_TOKENER_DEPTH 128
 
 #endif

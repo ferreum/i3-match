@@ -574,7 +574,7 @@ argparse_finished: {}
                 return 2;
             }
             enum json_tokener_error error;
-            json_object *tree = json_tokener_parse_verbose(buf.buf, &error);
+            tree = json_tokener_parse_verbose(buf.buf, &error);
             if (!tree) {
                 jsonutil_print_error("tree parse error", error);
                 sb_free(&buf);

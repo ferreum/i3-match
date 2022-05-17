@@ -3,106 +3,39 @@
 #include "debug.h"
 #include "base.h"
 
-#include <yajl/yajl_gen.h>
-#include <yajl/yajl_tree.h>
-
 #include <string.h>
 #include <stdlib.h>
 
-extern void yajlutil_print_cb_sb_push(void *ctx, const char *str, size_t len) {
-    string_builder *sb = ctx;
-    sb_pushn(sb, str, len);
-}
-
-static void check_status(yajl_gen_status status) {
-    if (status != yajl_gen_status_ok) {
-        fprintf(stderr, "yajl_gen_status was %d\n", (int) status);
-        abort();
-    }
-}
-
-extern void yajlutil_serialize_val(yajl_gen gen, yajl_val val, int parse_numbers) {
-    size_t i;
-    switch (val->type) {
-    case yajl_t_string:
-        check_status(yajl_gen_string(gen,
-                                     (const unsigned char *) val->u.string,
-                                     strlen(val->u.string)));
-        break;
-    case yajl_t_number:
-        if (parse_numbers && YAJL_IS_INTEGER(val)) {
-            check_status(yajl_gen_integer(gen, YAJL_GET_INTEGER(val)));
-        } else if (parse_numbers  &&  YAJL_IS_DOUBLE(val)) {
-            check_status(yajl_gen_double(gen, YAJL_GET_DOUBLE(val)));
-        } else {
-            check_status(yajl_gen_number(gen, YAJL_GET_NUMBER(val),
-                                         strlen(YAJL_GET_NUMBER(val))));
-        }
-        break;
-    case yajl_t_object:
-        check_status(yajl_gen_map_open(gen));
-        for (i = 0; i < val->u.object.len ; i++) {
-            check_status(yajl_gen_string(gen,
-                                         (const unsigned char *) val->u.object.keys[i],
-                                         strlen(val->u.object.keys[i])));
-            yajlutil_serialize_val(gen, val->u.object.values[i], parse_numbers);
-        }
-        check_status(yajl_gen_map_close(gen));
-        break;
-    case yajl_t_array:
-        check_status(yajl_gen_array_open(gen));
-        for (i = 0; i < val->u.array.len; i++)
-            yajlutil_serialize_val(gen, val->u.array.values[i], parse_numbers);
-        check_status(yajl_gen_array_close(gen));
-        break;
-    case yajl_t_true:
-        check_status(yajl_gen_bool(gen, 1));
-        break;
-    case yajl_t_false:
-        check_status(yajl_gen_bool(gen, 0));
-        break;
-    case yajl_t_null:
-        check_status(yajl_gen_null(gen));
-        break;
-    default:
-        fprintf(stderr, "unexpectedly got type %d\n", (int) val->type);
-        abort();
-    }
-}
-
-extern char *yajlutil_get_string(yajl_val val) {
+extern const char *jsonutil_get_string(json_object *val) {
     if (!val) {
         return "";
     }
-    switch (val->type) {
-    case yajl_t_string:
-        return YAJL_GET_STRING(val);
-    case yajl_t_number:
-        return YAJL_GET_NUMBER(val);
-    case yajl_t_object:
-        return NULL;
-    case yajl_t_array:
-        return NULL;
-    case yajl_t_true:
-        return "true";
-        break;
-    case yajl_t_false:
-        return "false";
-    case yajl_t_null:
+    json_type type = json_object_get_type(val);
+    switch (type) {
+    case json_type_null:
         return "";
+    case json_type_boolean:
+        return json_object_get_boolean(val) ? "true" : "false";
+    case json_type_double:
+    case json_type_int:
+    case json_type_string:
+        return json_object_get_string(val);
+    case json_type_object:
+        return NULL;
+    case json_type_array:
+        return NULL;
     default:
-        fprintf(stderr, "unexpectedly got type %d\n", (int) val->type);
+        fprintf(stderr, "unexpectedly got type %d\n", (int) type);
         abort();
     }
 }
 
-extern yajl_val yajlutil_path_get(yajl_val obj, const char *path, yajl_type type) {
+extern json_object *jsonutil_path_get(json_object *obj, const char *path) {
     for (;;) {
         char *p = strchr(path, '/');
-        const char *ykey[2] = {NULL, NULL};
         const char *keyend = p ? p : path + strlen(path);
         int keylen = keyend - path;
-        if (YAJL_IS_ARRAY(obj)) {
+        if (json_object_is_type(obj, json_type_array)) {
             debug_print("array key=%.*s\n", keylen, path);
             char *end = NULL;
             int index = strtol(path, &end, 10);
@@ -111,29 +44,32 @@ extern yajl_val yajlutil_path_get(yajl_val obj, const char *path, yajl_type type
                 return NULL;
             }
             if (index < 0) {
-                index += obj->u.array.len;
+                index += json_object_array_length(obj);
             }
-            if (index < 0 || (size_t) index >= obj->u.array.len) {
+            if (index < 0 || (size_t) index >= json_object_array_length(obj)) {
                 return NULL;
             } else {
-                obj = obj->u.array.values[index];
+                obj = json_object_array_get_idx(obj, index);
             }
         } else {
             STACK_SUBSTR(key, path, keylen);
             debug_print("key=%s\n", key);
-            ykey[0] = key;
-            obj = yajl_tree_get(obj, ykey, yajl_t_any);
-        }
-        if (!p) {
-            if (type == yajl_t_any || (obj && obj->type == type)) {
-                return obj;
-            } else {
+            if (!json_object_object_get_ex(obj, key, &obj)) {
                 return NULL;
             }
+        }
+        if (!p) {
+            return obj;
         } else if (!obj) {
             return NULL;
         } else {
             path = p + 1;
         }
     }
+}
+
+extern void jsonutil_print_error(const char *str, enum json_tokener_error error) {
+    const char *error_str = json_tokener_error_desc(error);
+    if (!str) error_str = "unknown error";
+    fprintf(stderr, "%s: %s\n", str, error_str);
 }

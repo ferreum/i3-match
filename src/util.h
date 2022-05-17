@@ -12,8 +12,6 @@ extern char *read_line(FILE *f);
 
 extern void push_whole_file(string_builder *sb, FILE *f);
 
-extern void print_error(char *msg, char *errbuf);
-
 #define STACK_SUBSTR(name, src, len) \
     char name[len + 1]; \
     strncpy(name, src, len); \

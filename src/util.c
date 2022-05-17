@@ -47,10 +47,3 @@ extern void push_whole_file(string_builder *sb, FILE *f) {
         }
     }
 }
-
-extern void print_error(char *errmsg, char *errbuf) {
-    fprintf(stderr, "%s: ", errmsg);
-    if (errbuf[0]) fprintf(stderr, "%s", errbuf);
-    else fprintf(stderr, "unknown error\n");
-}
-

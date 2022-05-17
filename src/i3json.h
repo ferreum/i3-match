@@ -4,7 +4,7 @@
 
 #include "base.h"
 
-#include <yajl/yajl_tree.h>
+#include <json-c/json_object.h>
 #include <stdio.h>
 
 typedef enum iter_advise {
@@ -22,9 +22,9 @@ typedef struct iter_info {
     int subnodec;
 } iter_info;
 
-typedef iter_advise (i3json_iter_nodes_pred)(yajl_val node, iter_info *info, void *ptr);
+typedef iter_advise (i3json_iter_nodes_pred)(json_object *node, iter_info *info, void *ptr);
 
-extern iter_advise i3json_iter_nodes(yajl_val tree, i3json_iter_nodes_pred pred, void *ptr);
+extern iter_advise i3json_iter_nodes(json_object *tree, i3json_iter_nodes_pred pred, void *ptr);
 
 typedef enum matcher_type {
     MT_EQUALS = 0<<0,
@@ -51,15 +51,15 @@ extern void i3json_make_matcher(const char *key, const char *pattern, unsigned i
 
 extern int i3json_matcher_match_value(const char* value, i3json_matcher *matcher);
 
-extern int i3json_matcher_match(yajl_val node, i3json_matcher *matchers);
+extern int i3json_matcher_match(json_object *node, i3json_matcher *matchers);
 
 typedef const char *(i3json_value_getter)(const char *key, void *ptr);
 
 extern int i3json_matchers_match_ex(int matcherc, i3json_matcher *matchers, i3json_value_getter *getter, void *ptr);
 
-extern int i3json_matchers_match_node(yajl_val node, int matcherc, i3json_matcher *matchers);
+extern int i3json_matchers_match_node(json_object *node, int matcherc, i3json_matcher *matchers);
 
-extern yajl_val i3json_matchers_match_tree(yajl_val tree, int matcherc, i3json_matcher *matchers);
+extern json_object *i3json_matchers_match_tree(json_object *tree, int matcherc, i3json_matcher *matchers);
 
 extern int i3json_matcher_cmp_key(i3json_matcher *matcher, const char* key);
 
@@ -75,6 +75,6 @@ typedef struct i3json_print_tree_context {
 
 #define I3JSON_EMPTY_PRINT_TREE_CONTEXT {.prevlevel = 0, .scratch = 0, .floating = 0}
 
-extern void i3json_tree_accum_data(yajl_val node, iter_info *info, i3json_print_tree_context *context);
+extern void i3json_tree_accum_data(json_object *node, iter_info *info, i3json_print_tree_context *context);
 
 #endif /* _I3JSON_H_ */

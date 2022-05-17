@@ -116,11 +116,11 @@ extern int i3json_matcher_match_value(const char* value, i3json_matcher *matcher
     return result;
 }
 
-extern int i3json_matcher_match(yajl_val node, i3json_matcher *matcher) {
+extern int i3json_matcher_match(json_object *node, i3json_matcher *matcher) {
     size_t keylen = matcher->key_len;
     STACK_SUBSTR(key, matcher->key, keylen);
-    yajl_val jobj = yajlutil_path_get(node, key, yajl_t_any);
-    const char *value = yajlutil_get_string(jobj);
+    json_object *jobj = jsonutil_path_get(node, key);
+    const char *value = jsonutil_get_string(jobj);
     return i3json_matcher_match_value(value, matcher);
 }
 
@@ -138,7 +138,7 @@ extern int i3json_matchers_match_ex(int matcherc, i3json_matcher *matchers, i3js
     return 1;
 }
 
-extern int i3json_matchers_match_node(yajl_val node, int matcherc, i3json_matcher *matchers) {
+extern int i3json_matchers_match_node(json_object *node, int matcherc, i3json_matcher *matchers) {
     int i;
     for (i = 0; i < matcherc; i++) {
         if (!i3json_matcher_match(node, matchers + i)) {
@@ -151,10 +151,10 @@ extern int i3json_matchers_match_node(yajl_val node, int matcherc, i3json_matche
 typedef struct {
     int matcherc;
     i3json_matcher *matchers;
-    yajl_val result;
+    json_object *result;
 } matcher_pred_args;
 
-static iter_advise matcher_pred(yajl_val node, __unused iter_info *info, void *ptr) {
+static iter_advise matcher_pred(json_object *node, __unused iter_info *info, void *ptr) {
     matcher_pred_args *args = ptr;
     if (i3json_matchers_match_node(node, args->matcherc, args->matchers)) {
         args->result = node;
@@ -164,7 +164,7 @@ static iter_advise matcher_pred(yajl_val node, __unused iter_info *info, void *p
     }
 }
 
-extern yajl_val i3json_matchers_match_tree(yajl_val tree, int matcherc, i3json_matcher *matchers) {
+extern json_object *i3json_matchers_match_tree(json_object *tree, int matcherc, i3json_matcher *matchers) {
     matcher_pred_args args = { .matcherc = matcherc, .matchers = matchers };
     if (i3json_iter_nodes(tree, &matcher_pred, &args) == ITER_ABORT_SUCCESS) {
         return args.result;
@@ -184,17 +184,23 @@ extern int i3json_matcher_cmp_key(i3json_matcher *matcher, const char* key) {
     return r;
 }
 
-static int i3json_is_scratch(yajl_val node) {
-    const char *ykey[] = {"scratchpad_state", NULL};
-    yajl_val yo = yajl_tree_get(node, ykey, yajl_t_string);
-    const char *state = YAJL_GET_STRING(yo);
+static int i3json_is_scratch(json_object *node) {
+    json_object *obj;
+    if (!json_object_object_get_ex(node, "scratchpad_state", &obj)
+         || !json_object_is_type(obj, json_type_string)) {
+        return 0;
+    }
+    const char *state = json_object_get_string(obj);
     return state && state[0] && strcmp(state, "none") != 0;
 }
 
-static int is_type(yajl_val node, const char *type) {
-    const char *ykey[] = {"type", NULL};
-    yajl_val tmp = yajl_tree_get(node, ykey, yajl_t_string);
-    const char *ntype = YAJL_GET_STRING(tmp);
+static int is_type(json_object *node, const char *type) {
+    json_object *obj;
+    if (!json_object_object_get_ex(node, "type", &obj)
+         || !json_object_is_type(obj, json_type_string)) {
+        return 0;
+    }
+    const char *ntype = json_object_get_string(obj);
     return ntype && strcmp(ntype, type) == 0;
 }
 
@@ -215,35 +221,43 @@ do {                                                                \
 #define ACCUM_LEVEL(field, cond, level, prevlevel) \
     ACCUM_DATA(field, cond, level, prevlevel, {}, {})
 
-void i3json_tree_accum_data(yajl_val node, iter_info *info, i3json_print_tree_context *context) {
+void i3json_tree_accum_data(json_object *node, iter_info *info, i3json_print_tree_context *context) {
     ACCUM_LEVEL(context->scratch, i3json_is_scratch(node), info->level, context->prevlevel);
     ACCUM_LEVEL(context->floating, info->floating, info->level, context->prevlevel);
-    const char *ykey[] = {"name", NULL};
     ACCUM_DATA(context->wslevel, is_type(node, "workspace"), info->level, context->prevlevel, {
-        yajl_val tmp = yajl_tree_get(node, ykey, yajl_t_string);
-        context->ws = YAJL_GET_STRING(tmp);
+        json_object *tmp;
+        if (json_object_object_get_ex(node, "name", &tmp)
+            && json_object_is_type(tmp, json_type_string)) {
+            context->ws = json_object_get_string(tmp);
+        } else {
+            context->ws = "";
+        }
     }, {
         context->ws = NULL;
     });
     ACCUM_DATA(context->outputlevel, is_type(node, "output"), info->level, context->prevlevel, {
-        yajl_val tmp = yajl_tree_get(node, ykey, yajl_t_string);
-        context->output = YAJL_GET_STRING(tmp);
+        json_object *tmp;
+        if (json_object_object_get_ex(node, "name", &tmp)
+            && json_object_is_type(tmp, json_type_string)) {
+            context->output = json_object_get_string(tmp);
+        } else {
+            context->output = "";
+        }
     }, {
         context->output = NULL;
     });
     context->prevlevel = info->level;
 }
 
-static iter_advise i3json_iter_nodes_recurse(yajl_val tree, iter_info *info, i3json_iter_nodes_pred pred, void *ptr) {
+static iter_advise i3json_iter_nodes_recurse(json_object *tree, iter_info *info, i3json_iter_nodes_pred pred, void *ptr) {
     static const char *keys[] = {"nodes", "floating_nodes"};
     int ki;
     int subnodec = 0;
-    const char *ykey[2] = {NULL, NULL};
     for (ki = 0; ki < 2; ki++) {
-        ykey[0] = keys[ki];
-        yajl_val tmp = yajl_tree_get(tree, ykey, yajl_t_array);
-        if (YAJL_IS_ARRAY(tmp)) {
-            subnodec += YAJL_GET_ARRAY(tmp)->len;
+        json_object *tmp;
+        if (json_object_object_get_ex(tree, keys[ki], &tmp)
+            && json_object_is_type(tmp, json_type_array)) {
+            subnodec += json_object_array_length(tmp);
         }
     }
     info->subnodec = subnodec;
@@ -260,13 +274,13 @@ static iter_advise i3json_iter_nodes_recurse(yajl_val tree, iter_info *info, i3j
     }
     int nodei = 0;
     for (ki = 0; ki < 2; ki++) {
-        ykey[0] = keys[ki];
-        yajl_val nodes = yajl_tree_get(tree, ykey, yajl_t_array);
-        if (YAJL_IS_ARRAY(nodes)) {
-            int numnodes = nodes->u.array.len;
+        json_object *nodes;
+        if (json_object_object_get_ex(tree, keys[ki], &nodes)
+            && json_object_is_type(nodes, json_type_array)) {
+            int nodes_length = json_object_array_length(nodes);
             int i;
-            for (i = 0; i < numnodes; i++) {
-                yajl_val node = nodes->u.array.values[i];
+            for (i = 0; i < nodes_length; i++) {
+                json_object *node = json_object_array_get_idx(nodes, i);
                 iter_info subinfo = { .level = info->level + 1, .floating = ki == 1, .nodei = nodei, .nodec = subnodec};
                 iter_advise subadv = i3json_iter_nodes_recurse(node, &subinfo, pred, ptr);
                 switch (subadv) {
@@ -287,7 +301,7 @@ static iter_advise i3json_iter_nodes_recurse(yajl_val tree, iter_info *info, i3j
     return ITER_CONT;
 }
 
-iter_advise i3json_iter_nodes(yajl_val tree, i3json_iter_nodes_pred pred, void *ptr) {
+iter_advise i3json_iter_nodes(json_object *tree, i3json_iter_nodes_pred pred, void *ptr) {
     iter_info info = { .level = 0, .floating = 0, .nodei = 0, .nodec = 1 };
     return i3json_iter_nodes_recurse(tree, &info, pred, ptr);
 }

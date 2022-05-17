@@ -4,17 +4,17 @@
 
 #include "sb.h"
 
-#include <yajl/yajl_tree.h>
-#include <yajl/yajl_gen.h>
+#include <json-c/json_object.h>
+#include <json-c/json_tokener.h>
 
 #include <stdio.h>
 
-extern void yajlutil_print_cb_sb_push(void *ctx, const char *str, size_t len);
+extern void jsonutil_print_cb_sb_push(void *ctx, const char *str, size_t len);
 
-extern void yajlutil_serialize_val(yajl_gen gen, yajl_val val, int parse_numbers);
+extern const char *jsonutil_get_string(json_object *val);
 
-extern char *yajlutil_get_string(yajl_val val);
+extern json_object *jsonutil_path_get(json_object *obj, const char *path);
 
-extern yajl_val yajlutil_path_get(yajl_val obj, const char *path, yajl_type type);
+extern void jsonutil_print_error(const char *str, enum json_tokener_error error);
 
 #endif /* _JSONUTIL_H_ */

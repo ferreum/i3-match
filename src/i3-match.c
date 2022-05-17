@@ -480,8 +480,6 @@ static int main_subscribe(struct context *context) {
 int main(int argc, char *argv[]) {
     i3json_matcher matchers[argc];
 
-    #define SMALL_ITREE_SIZE 16
-    char itree[SMALL_ITREE_SIZE];
     struct context context = {
         .sock_path = NULL,
         .in_file = NULL,
@@ -498,7 +496,7 @@ int main(int argc, char *argv[]) {
         .field_sep_len = 1,
         .swaymode = 0,
         .sb = EMPTY_STRING_BUILDER,
-        .itree = SB_WITH_EXT_BUF(itree, SMALL_ITREE_SIZE),
+        .itree = EMPTY_STRING_BUILDER,
         .matchcount = 0,
         .pt_context = I3JSON_EMPTY_PRINT_TREE_CONTEXT,
     };

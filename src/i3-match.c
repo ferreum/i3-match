@@ -478,7 +478,8 @@ static int main_subscribe(struct context *context) {
 }
 
 int main(int argc, char *argv[]) {
-    i3json_matcher matchers[argc];
+    i3json_matcher *matchers = calloc(argc - 1, sizeof(i3json_matcher));
+    if (argc > 1) malloc_check(matchers);
 
     struct context context = {
         .sock_path = NULL,
@@ -668,6 +669,7 @@ argparse_finished: {}
     sb_free(&context.itree);
     sb_free(&context.sb);
     free(aoutputs);
+    free(matchers);
 
     return result;
 }

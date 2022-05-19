@@ -7,12 +7,12 @@
 #include <json-c/json_object.h>
 #include <stdio.h>
 
-typedef enum iter_advise {
+typedef enum iter_advice {
     ITER_CONT = 0,
     ITER_NODESC = 1,
     ITER_ABORT = 2,
     ITER_ABORT_SUCCESS = 3
-} iter_advise;
+} iter_advice;
 
 typedef struct iter_info {
     int level;
@@ -22,9 +22,9 @@ typedef struct iter_info {
     int subnodec;
 } iter_info;
 
-typedef iter_advise (i3json_iter_nodes_pred)(json_object *node, iter_info *info, void *ptr);
+typedef iter_advice (i3json_iter_nodes_pred)(json_object *node, iter_info *info, void *ptr);
 
-extern iter_advise i3json_iter_nodes(json_object *tree, i3json_iter_nodes_pred pred, void *ptr);
+extern iter_advice i3json_iter_nodes(json_object *tree, i3json_iter_nodes_pred pred, void *ptr);
 
 typedef enum matcher_type {
     MT_EQUALS = 0<<0,

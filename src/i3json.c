@@ -154,7 +154,7 @@ typedef struct {
     json_object *result;
 } matcher_pred_args;
 
-static iter_advise matcher_pred(json_object *node, __unused iter_info *info, void *ptr) {
+static iter_advice matcher_pred(json_object *node, __unused iter_info *info, void *ptr) {
     matcher_pred_args *args = ptr;
     if (i3json_matchers_match_node(node, args->matcherc, args->matchers)) {
         args->result = node;
@@ -249,7 +249,7 @@ void i3json_tree_accum_data(json_object *node, iter_info *info, i3json_print_tre
     context->prevlevel = info->level;
 }
 
-static iter_advise i3json_iter_nodes_recurse(json_object *tree, iter_info *info, i3json_iter_nodes_pred pred, void *ptr) {
+static iter_advice i3json_iter_nodes_recurse(json_object *tree, iter_info *info, i3json_iter_nodes_pred pred, void *ptr) {
     static const char *keys[] = {"nodes", "floating_nodes"};
     int ki;
     int subnodec = 0;
@@ -261,7 +261,7 @@ static iter_advise i3json_iter_nodes_recurse(json_object *tree, iter_info *info,
         }
     }
     info->subnodec = subnodec;
-    iter_advise adv = pred(tree, info, ptr);
+    iter_advice adv = pred(tree, info, ptr);
     switch (adv) {
     case ITER_CONT:
         // Descend to children.
@@ -282,7 +282,7 @@ static iter_advise i3json_iter_nodes_recurse(json_object *tree, iter_info *info,
             for (i = 0; i < nodes_length; i++) {
                 json_object *node = json_object_array_get_idx(nodes, i);
                 iter_info subinfo = { .level = info->level + 1, .floating = ki == 1, .nodei = nodei, .nodec = subnodec};
-                iter_advise subadv = i3json_iter_nodes_recurse(node, &subinfo, pred, ptr);
+                iter_advice subadv = i3json_iter_nodes_recurse(node, &subinfo, pred, ptr);
                 switch (subadv) {
                 case ITER_CONT:
                     // Continue iteration.
@@ -301,7 +301,7 @@ static iter_advise i3json_iter_nodes_recurse(json_object *tree, iter_info *info,
     return ITER_CONT;
 }
 
-iter_advise i3json_iter_nodes(json_object *tree, i3json_iter_nodes_pred pred, void *ptr) {
+iter_advice i3json_iter_nodes(json_object *tree, i3json_iter_nodes_pred pred, void *ptr) {
     iter_info info = { .level = 0, .floating = 0, .nodei = 0, .nodec = 1 };
     return i3json_iter_nodes_recurse(tree, &info, pred, ptr);
 }

@@ -261,7 +261,7 @@ static const char *node_value_getter(const char *key, void *ptr) {
     return sb->buf;
 }
 
-static iter_advise process_node(json_object *node, iter_info *info, struct context *ctx) {
+static iter_advice process_node(json_object *node, iter_info *info, struct context *ctx) {
     ++ctx->objcount;
     struct node_getter_args gargs = {
         .node = node,
@@ -314,10 +314,10 @@ static int subscribe_eventloop(struct context *ctx, int sock) {
             jsonutil_print_error("event parse error", json_tokener_get_error(tokener));
             // continue matching against NULL value
         }
-        iter_advise advise = process_node(event, &info, ctx);
+        iter_advice advice = process_node(event, &info, ctx);
         json_object_put(event);
         i3ipc_msg_recycle(&msg);
-        switch (advise) {
+        switch (advice) {
         case ITER_ABORT_SUCCESS:
             status = 0;
             goto cleanup;
@@ -373,7 +373,7 @@ static json_object *get_matching_evtypes(i3json_matcher *matchers, int matcherc,
     return array;
 }
 
-static iter_advise matchmode_iter_pred(json_object *node, iter_info *info, void *ptr) {
+static iter_advice matchmode_iter_pred(json_object *node, iter_info *info, void *ptr) {
     struct context *ctx = ptr;
     i3json_tree_accum_data(node, info, &ctx->pt_context);
     return process_node(node, info, ctx);

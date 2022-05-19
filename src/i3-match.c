@@ -93,12 +93,16 @@ enum flags {
 };
 
 struct context {
+    const char *sock_path;
+    const char *in_file;
     i3json_matcher *matchers;
     int matcherc;
     enum outmode outmode;
     char **outputs;
     int outputc;
     int flags;
+    int almostall;
+    int mincount;
     int maxcount;
     char *field_sep;
     size_t field_sep_len;
@@ -127,7 +131,7 @@ static const char *eventtype2name(unsigned int type) {
     return "unknown";
 }
 
-static void push_value(string_builder *sb, const char* key,
+static void push_value(string_builder *sb, const char *key,
                        json_object *node, iter_info *info,
                        struct context *ctx, int match) {
     debug_print("key=%s\n", key);
@@ -257,7 +261,7 @@ static const char *node_value_getter(const char *key, void *ptr) {
     return sb->buf;
 }
 
-static iter_advise process_node(json_object *node, iter_info *info, struct context *ctx) {
+static iter_advice process_node(json_object *node, iter_info *info, struct context *ctx) {
     ++ctx->objcount;
     struct node_getter_args gargs = {
         .node = node,
@@ -291,13 +295,7 @@ static iter_advise process_node(json_object *node, iter_info *info, struct conte
     return ITER_CONT;
 }
 
-static iter_advise iter_pred(json_object *node, iter_info *info, void *ptr) {
-    struct context *ctx = ptr;
-    i3json_tree_accum_data(node, info, &ctx->pt_context);
-    return process_node(node, info, ctx);
-}
-
-static int eventloop(int sock, struct context *ctx) {
+static int subscribe_eventloop(struct context *ctx, int sock) {
     i3_msg msg = EMPTY_I3_MSG;
     ctx->msg = &msg;
     // iter_info values not meaningful for events
@@ -316,10 +314,10 @@ static int eventloop(int sock, struct context *ctx) {
             jsonutil_print_error("event parse error", json_tokener_get_error(tokener));
             // continue matching against NULL value
         }
-        iter_advise advise = process_node(event, &info, ctx);
+        iter_advice advice = process_node(event, &info, ctx);
         json_object_put(event);
         i3ipc_msg_recycle(&msg);
-        switch (advise) {
+        switch (advice) {
         case ITER_ABORT_SUCCESS:
             status = 0;
             goto cleanup;
@@ -375,24 +373,146 @@ static json_object *get_matching_evtypes(i3json_matcher *matchers, int matcherc,
     return array;
 }
 
-int main(int argc, char *argv[]) {
-    i3json_matcher matchers[argc];
+static iter_advice matchmode_iter_pred(json_object *node, iter_info *info, void *ptr) {
+    struct context *ctx = ptr;
+    i3json_tree_accum_data(node, info, &ctx->pt_context);
+    return process_node(node, info, ctx);
+}
 
-    #define SMALL_ITREE_SIZE 16
-    char itree[SMALL_ITREE_SIZE];
+static int match_mode_main(struct context *context) {
+    if (context->outmode == OUT_NONE) {
+        context->maxcount = context->mincount;
+    }
+    string_builder buf = EMPTY_STRING_BUILDER;
+    i3_msg msg = EMPTY_I3_MSG;
+    json_object *tree = NULL;
+    FILE *f = NULL;
+    int sock = -1;
+    json_tokener *tok = NULL;
+    int result = 2;
+    if (context->in_file) {
+        FILE *stream = NULL;
+        if (strcmp(context->in_file, "-") == 0) {
+            stream = stdin;
+        } else {
+            f = stream = fopen(context->in_file, "r");
+            if (!f) {
+                perror("open");
+                goto cleanup;
+            }
+        }
+        push_whole_file(&buf, stream);
+        if (ferror(stream)) {
+            perror("read");
+            goto cleanup;
+        }
+        if (buf.len == 0) {
+            fprintf(stderr, "json input is empty\n");
+            goto cleanup;
+        }
+        tok = json_tokener_new_ex(JSON_TOKENER_DEPTH);
+        malloc_check(tok);
+        tree = json_tokener_parse_ex(tok, buf.buf, buf.len);
+        if (!tree) {
+            jsonutil_print_error("tree parse error", json_tokener_get_error(tok));
+            goto cleanup;
+        }
+    } else {
+        set_default_sigchld_handler();
+        sock = i3ipc_open_socket(context->sock_path, context->swaymode);
+        if (sock == -1) {
+            goto cleanup;
+        }
+        if (i3util_request_json(sock, I3_IPC_MESSAGE_TYPE_GET_TREE, "", &msg, &tree) == -1) {
+            goto cleanup;
+        }
+        debug_print("%s\n", "close sock...");
+    }
+
+    i3json_iter_nodes(tree, &matchmode_iter_pred, context);
+    result = context->matchcount >= context->mincount ? 0 : 1;
+
+cleanup:
+    if (f) fclose(f);
+    if (sock != -1) close(sock);
+    if (tok) json_tokener_free(tok);
+    json_object_put(tree);
+    del_i3_msg(&msg);
+    sb_free(&buf);
+    return result;
+}
+
+static int subscribe_start(struct context *context, int sock) {
+    const char *body = NULL;
+    json_object *tmparray = NULL;
+
+    int result = -1;
+    if (context->flags & F_PRINTALL && !context->almostall) {
+        body = context->swaymode ? ALL_EVENTS_SUB_JSON_SWAY
+            : ALL_EVENTS_SUB_JSON_I3;
+    } else {
+        tmparray = get_matching_evtypes(
+            context->matchers, context->matcherc, context->swaymode);
+        if (!json_object_array_length(tmparray)) {
+            fprintf(stderr, ":evtype never matches\n");
+            goto cleanup;
+        }
+        body = json_object_to_json_string_ext(
+            tmparray, JSON_C_TO_STRING_PLAIN);
+    }
+    debug_print("body=%s\n", body);
+    if (i3util_subscribe(sock, body) == -1) {
+        fprintf(stderr, "subscribe request failed\n");
+        goto cleanup;
+    }
+
+    result = 0;
+
+cleanup:
+    json_object_put(tmparray);
+    return result;
+}
+
+static int subscribe_mode_main(struct context *context) {
+    set_default_sigchld_handler();
+    int result = 2;
+
+    int sock = i3ipc_open_socket(context->sock_path, context->swaymode);
+    if (sock == -1) {
+        goto cleanup;
+    }
+    if (subscribe_start(context, sock) == -1) {
+        goto cleanup;
+    }
+
+    result = subscribe_eventloop(context, sock);
+
+cleanup:
+    close(sock);
+    return result;
+}
+
+int main(int argc, char *argv[]) {
+    i3json_matcher *matchers = calloc(argc - 1, sizeof(i3json_matcher));
+    if (argc > 1) malloc_check(matchers);
+
     struct context context = {
+        .sock_path = NULL,
+        .in_file = NULL,
         .matchers = matchers,
         .matcherc = 0,
         .outmode = OUT_NONE,
         .outputs = NULL,
         .outputc = 0,
         .flags = 0,
+        .almostall = 0,
+        .mincount = 1,
         .maxcount = 0,
         .field_sep = " ",
         .field_sep_len = 1,
         .swaymode = 0,
         .sb = EMPTY_STRING_BUILDER,
-        .itree = SB_WITH_EXT_BUF(itree, SMALL_ITREE_SIZE),
+        .itree = EMPTY_STRING_BUILDER,
         .matchcount = 0,
         .pt_context = I3JSON_EMPTY_PRINT_TREE_CONTEXT,
     };
@@ -409,27 +529,26 @@ int main(int argc, char *argv[]) {
     }
 
     #define EXIT_MODE_ERROR(mode, option) \
-        do { fprintf(stderr, option " can only be used in " mode "\n"); return 2; } while (0)
-    const char *spath = NULL;
+        do { fprintf(stderr, option " can only be used in " mode "\n"); goto cleanup; } while (0)
     enum mode mode = MODE_MATCH;
-    int almostall = 0, mincount = 1, printtree = 0;
+    int printtree = 0;
     char **aoutputs = NULL;
     int c;
     int have_modearg = 0;
-    const char *infile = NULL;
     optind = 1;
+    int result = 2;
     while (optind < argc) {
         int prevind = optind;
         if ((c = getopt(argc, argv, "+s:Si:ahml:n:d:e:toIW")) != -1) {
             debug_print("option: ind=%d c=%c\n", optind, c);
             switch (c) {
             case 's':
-                spath = optarg;
+                context.sock_path = optarg;
                 break;
             case 'S':
                 if (have_modearg) {
                     fprintf(stderr, "cannot specify mode after mode-specific arguments\n");
-                    return 2;
+                    goto cleanup;
                 }
                 context.maxcount = 1;
                 context.flags |= F_FLUSH;
@@ -438,11 +557,11 @@ int main(int argc, char *argv[]) {
             case 'i':
                 if (mode != MODE_MATCH) EXIT_MODE_ERROR("match-mode", "-i");
                 have_modearg = 1;
-                infile = optarg;
+                context.in_file = optarg;
                 break;
             case 'a':
                 if (context.flags & F_PRINTALL) {
-                    almostall = 1;
+                    context.almostall = 1;
                 }
                 context.flags |= F_PRINTALL;
                 break;
@@ -461,17 +580,17 @@ int main(int argc, char *argv[]) {
                 int value, count;
                 if (sscanf(optarg, "%d%n", &value, &count) < 1 || optarg[count] != '\0') {
                     fprintf(stderr, "invalid min count (-l) - %s\n", optarg);
-                    return 2;
+                    goto cleanup;
                 }
                 have_modearg = 1;
-                mincount = value;
+                context.mincount = value;
                 break;
             }
             case 'n': {
                 int value, count;
                 if (sscanf(optarg, "%d%n", &value, &count) < 1 || optarg[count] != '\0') {
                     fprintf(stderr, "invalid max count (-n) - %s\n", optarg);
-                    return 2;
+                    goto cleanup;
                 }
                 have_modearg = 1;
                 context.maxcount = value;
@@ -485,12 +604,12 @@ int main(int argc, char *argv[]) {
                 have_modearg = 1;
                 if (argc - optind < 2) {
                     fprintf(stderr, "missing %d arguments for -e\n", 2 + optind - argc);
-                    return 2;
+                    goto cleanup;
                 }
                 int op = i3json_parse_operator(argv[optind]);
                 if (op == -1) {
                     fprintf(stderr, "invalid operator: %s\n", argv[optind]);
-                    return 2;
+                    goto cleanup;
                 }
                 i3json_make_matcher(optarg, argv[optind + 1], op, matchers + context.matcherc);
                 ++context.matcherc;
@@ -508,7 +627,7 @@ int main(int argc, char *argv[]) {
             case 'o':
                 if (optind == prevind) {
                     fprintf(stderr, "no option allowed after -o\n");
-                    return 2;
+                    goto cleanup;
                 }
                 have_modearg = 1;
                 context.outmode = OUT_FIELDS;
@@ -531,7 +650,7 @@ int main(int argc, char *argv[]) {
                 context.swaymode = 1;
                 break;
             case '?':
-                return 2;
+                goto cleanup;
             default:
                 fprintf(stderr, "unhandled option: '%c'\n", c);
                 abort();
@@ -541,7 +660,7 @@ int main(int argc, char *argv[]) {
             const char *arg = argv[optind];
             if (i3json_parse_matcher(arg, matchers + context.matcherc) == -1) {
                 fprintf(stderr, "invalid filter: %s\n", arg);
-                return 2;
+                goto cleanup;
             }
             ++context.matcherc;
             ++optind;
@@ -549,115 +668,24 @@ int main(int argc, char *argv[]) {
     }
 argparse_finished: {}
 
-    int result;
-
     switch (mode) {
-    case MODE_MATCH: {
-        if (context.outmode == OUT_NONE) {
-            context.maxcount = mincount;
-        }
-        string_builder buf = EMPTY_STRING_BUILDER;
-        i3_msg msg = EMPTY_I3_MSG;
-        json_object *tree = NULL;
-        if (infile) {
-            FILE *stream = NULL;
-            FILE *f = NULL;
-            if (strcmp(infile, "-") == 0) {
-                stream = stdin;
-            } else {
-                f = stream = fopen(infile, "r");
-                if (!f) {
-                    perror("open");
-                    return 2;
-                }
-            }
-            push_whole_file(&buf, stream);
-            if (ferror(stream)) {
-                sb_free(&buf);
-                if (f) fclose(f);
-                return 2;
-            }
-            if (buf.len == 0) {
-                fprintf(stderr, "json input is empty\n");
-                if (f) fclose(f);
-                return 2;
-            }
-            json_tokener *tok = json_tokener_new_ex(JSON_TOKENER_DEPTH);
-            malloc_check(tok);
-            tree = json_tokener_parse_ex(tok, buf.buf, buf.len);
-            if (!tree) {
-                jsonutil_print_error("tree parse error", json_tokener_get_error(tok));
-                json_tokener_free(tok);
-                sb_free(&buf);
-                if (f) fclose(f);
-                return 2;
-            }
-            json_tokener_free(tok);
-            if (f) fclose(f);
-        } else {
-            set_default_sigchld_handler();
-            int sock = i3ipc_open_socket(spath, context.swaymode);
-            if (sock == -1) {
-                return 2;
-            }
-            if (i3util_request_json(sock, I3_IPC_MESSAGE_TYPE_GET_TREE, "", &msg, &tree) == -1) {
-                close(sock);
-                return 2;
-            }
-            debug_print("%s\n", "close sock...");
-            close(sock);
-        }
-        i3json_iter_nodes(tree, &iter_pred, &context);
-        json_object_put(tree);
-        del_i3_msg(&msg);
-        sb_free(&buf);
-        result = context.matchcount >= mincount ? 0 : 1;
+    case MODE_MATCH:
+        result = match_mode_main(&context);
         break;
-    }
-    case MODE_SUBSCRIBE: {
-        set_default_sigchld_handler();
-        int sock = i3ipc_open_socket(spath, context.swaymode);
-        if (sock == -1) {
-            return 2;
-        }
-        {
-            const char *body = NULL;
-            json_object *tmparray = NULL;
-            if (context.flags & F_PRINTALL && !almostall) {
-                body = context.swaymode ? ALL_EVENTS_SUB_JSON_SWAY
-                    : ALL_EVENTS_SUB_JSON_I3;
-            } else {
-                tmparray = get_matching_evtypes(
-                     context.matchers, context.matcherc, context.swaymode);
-                if (!json_object_array_length(tmparray)) {
-                    fprintf(stderr, ":evtype never matches\n");
-                    json_object_put(tmparray);
-                    return 2;
-                }
-                body = json_object_to_json_string_ext(
-                    tmparray, JSON_C_TO_STRING_PLAIN);
-            }
-            debug_print("body=%s\n", body);
-            int res = i3util_subscribe(sock, body);
-            json_object_put(tmparray);
-            if (res == -1) {
-                fprintf(stderr, "subscribe request failed\n");
-                return 2;
-            }
-        }
-        result = eventloop(sock, &context);
-        close(sock);
+    case MODE_SUBSCRIBE:
+        result = subscribe_mode_main(&context);
         break;
-    }
     default:
         fprintf(stderr, "invalid operation mode\n");
         abort();
     }
 
+cleanup:
     debug_print("%s\n", "cleanup...");
     sb_free(&context.itree);
     sb_free(&context.sb);
     free(aoutputs);
+    free(matchers);
 
     return result;
 }

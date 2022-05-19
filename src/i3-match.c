@@ -529,13 +529,14 @@ int main(int argc, char *argv[]) {
     }
 
     #define EXIT_MODE_ERROR(mode, option) \
-        do { fprintf(stderr, option " can only be used in " mode "\n"); return 2; } while (0)
+        do { fprintf(stderr, option " can only be used in " mode "\n"); goto cleanup; } while (0)
     enum mode mode = MODE_MATCH;
     int printtree = 0;
     char **aoutputs = NULL;
     int c;
     int have_modearg = 0;
     optind = 1;
+    int result = 2;
     while (optind < argc) {
         int prevind = optind;
         if ((c = getopt(argc, argv, "+s:Si:ahml:n:d:e:toIW")) != -1) {
@@ -547,7 +548,7 @@ int main(int argc, char *argv[]) {
             case 'S':
                 if (have_modearg) {
                     fprintf(stderr, "cannot specify mode after mode-specific arguments\n");
-                    return 2;
+                    goto cleanup;
                 }
                 context.maxcount = 1;
                 context.flags |= F_FLUSH;
@@ -579,7 +580,7 @@ int main(int argc, char *argv[]) {
                 int value, count;
                 if (sscanf(optarg, "%d%n", &value, &count) < 1 || optarg[count] != '\0') {
                     fprintf(stderr, "invalid min count (-l) - %s\n", optarg);
-                    return 2;
+                    goto cleanup;
                 }
                 have_modearg = 1;
                 context.mincount = value;
@@ -589,7 +590,7 @@ int main(int argc, char *argv[]) {
                 int value, count;
                 if (sscanf(optarg, "%d%n", &value, &count) < 1 || optarg[count] != '\0') {
                     fprintf(stderr, "invalid max count (-n) - %s\n", optarg);
-                    return 2;
+                    goto cleanup;
                 }
                 have_modearg = 1;
                 context.maxcount = value;
@@ -603,12 +604,12 @@ int main(int argc, char *argv[]) {
                 have_modearg = 1;
                 if (argc - optind < 2) {
                     fprintf(stderr, "missing %d arguments for -e\n", 2 + optind - argc);
-                    return 2;
+                    goto cleanup;
                 }
                 int op = i3json_parse_operator(argv[optind]);
                 if (op == -1) {
                     fprintf(stderr, "invalid operator: %s\n", argv[optind]);
-                    return 2;
+                    goto cleanup;
                 }
                 i3json_make_matcher(optarg, argv[optind + 1], op, matchers + context.matcherc);
                 ++context.matcherc;
@@ -626,7 +627,7 @@ int main(int argc, char *argv[]) {
             case 'o':
                 if (optind == prevind) {
                     fprintf(stderr, "no option allowed after -o\n");
-                    return 2;
+                    goto cleanup;
                 }
                 have_modearg = 1;
                 context.outmode = OUT_FIELDS;
@@ -649,7 +650,7 @@ int main(int argc, char *argv[]) {
                 context.swaymode = 1;
                 break;
             case '?':
-                return 2;
+                goto cleanup;
             default:
                 fprintf(stderr, "unhandled option: '%c'\n", c);
                 abort();
@@ -659,7 +660,7 @@ int main(int argc, char *argv[]) {
             const char *arg = argv[optind];
             if (i3json_parse_matcher(arg, matchers + context.matcherc) == -1) {
                 fprintf(stderr, "invalid filter: %s\n", arg);
-                return 2;
+                goto cleanup;
             }
             ++context.matcherc;
             ++optind;
@@ -667,7 +668,6 @@ int main(int argc, char *argv[]) {
     }
 argparse_finished: {}
 
-    int result;
     switch (mode) {
     case MODE_MATCH:
         result = main_match(&context);
@@ -680,6 +680,7 @@ argparse_finished: {}
         abort();
     }
 
+cleanup:
     debug_print("%s\n", "cleanup...");
     sb_free(&context.itree);
     sb_free(&context.sb);

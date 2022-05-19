@@ -131,7 +131,7 @@ static const char *eventtype2name(unsigned int type) {
     return "unknown";
 }
 
-static void push_value(string_builder *sb, const char* key,
+static void push_value(string_builder *sb, const char *key,
                        json_object *node, iter_info *info,
                        struct context *ctx, int match) {
     debug_print("key=%s\n", key);
@@ -295,13 +295,7 @@ static iter_advise process_node(json_object *node, iter_info *info, struct conte
     return ITER_CONT;
 }
 
-static iter_advise iter_pred(json_object *node, iter_info *info, void *ptr) {
-    struct context *ctx = ptr;
-    i3json_tree_accum_data(node, info, &ctx->pt_context);
-    return process_node(node, info, ctx);
-}
-
-static int eventloop(struct context *ctx, int sock) {
+static int subscribe_eventloop(struct context *ctx, int sock) {
     i3_msg msg = EMPTY_I3_MSG;
     ctx->msg = &msg;
     // iter_info values not meaningful for events
@@ -379,7 +373,13 @@ static json_object *get_matching_evtypes(i3json_matcher *matchers, int matcherc,
     return array;
 }
 
-static int main_match(struct context *context) {
+static iter_advise matchmode_iter_pred(json_object *node, iter_info *info, void *ptr) {
+    struct context *ctx = ptr;
+    i3json_tree_accum_data(node, info, &ctx->pt_context);
+    return process_node(node, info, ctx);
+}
+
+static int match_mode_main(struct context *context) {
     if (context->outmode == OUT_NONE) {
         context->maxcount = context->mincount;
     }
@@ -429,7 +429,7 @@ static int main_match(struct context *context) {
         debug_print("%s\n", "close sock...");
     }
 
-    i3json_iter_nodes(tree, &iter_pred, context);
+    i3json_iter_nodes(tree, &matchmode_iter_pred, context);
     result = context->matchcount >= context->mincount ? 0 : 1;
 
 cleanup:
@@ -442,7 +442,7 @@ cleanup:
     return result;
 }
 
-static int start_subscribe(struct context *context, int sock) {
+static int subscribe_start(struct context *context, int sock) {
     const char *body = NULL;
     json_object *tmparray = NULL;
 
@@ -473,7 +473,7 @@ cleanup:
     return result;
 }
 
-static int main_subscribe(struct context *context) {
+static int subscribe_mode_main(struct context *context) {
     set_default_sigchld_handler();
     int result = 2;
 
@@ -481,11 +481,11 @@ static int main_subscribe(struct context *context) {
     if (sock == -1) {
         goto cleanup;
     }
-    if (start_subscribe(context, sock) == -1) {
+    if (subscribe_start(context, sock) == -1) {
         goto cleanup;
     }
 
-    result = eventloop(context, sock);
+    result = subscribe_eventloop(context, sock);
 
 cleanup:
     close(sock);
@@ -670,10 +670,10 @@ argparse_finished: {}
 
     switch (mode) {
     case MODE_MATCH:
-        result = main_match(&context);
+        result = match_mode_main(&context);
         break;
     case MODE_SUBSCRIBE:
-        result = main_subscribe(&context);
+        result = subscribe_mode_main(&context);
         break;
     default:
         fprintf(stderr, "invalid operation mode\n");

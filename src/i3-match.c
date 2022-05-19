@@ -301,7 +301,7 @@ static iter_advise iter_pred(json_object *node, iter_info *info, void *ptr) {
     return process_node(node, info, ctx);
 }
 
-static int eventloop(int sock, struct context *ctx) {
+static int eventloop(struct context *ctx, int sock) {
     i3_msg msg = EMPTY_I3_MSG;
     ctx->msg = &msg;
     // iter_info values not meaningful for events
@@ -442,38 +442,52 @@ cleanup:
     return result;
 }
 
+static int start_subscribe(struct context *context, int sock) {
+    const char *body = NULL;
+    json_object *tmparray = NULL;
+
+    int result = -1;
+    if (context->flags & F_PRINTALL && !context->almostall) {
+        body = context->swaymode ? ALL_EVENTS_SUB_JSON_SWAY
+            : ALL_EVENTS_SUB_JSON_I3;
+    } else {
+        tmparray = get_matching_evtypes(
+            context->matchers, context->matcherc, context->swaymode);
+        if (!json_object_array_length(tmparray)) {
+            fprintf(stderr, ":evtype never matches\n");
+            goto cleanup;
+        }
+        body = json_object_to_json_string_ext(
+            tmparray, JSON_C_TO_STRING_PLAIN);
+    }
+    debug_print("body=%s\n", body);
+    if (i3util_subscribe(sock, body) == -1) {
+        fprintf(stderr, "subscribe request failed\n");
+        goto cleanup;
+    }
+
+    result = 0;
+
+cleanup:
+    json_object_put(tmparray);
+    return result;
+}
+
 static int main_subscribe(struct context *context) {
     set_default_sigchld_handler();
+    int result = 2;
+
     int sock = i3ipc_open_socket(context->sock_path, context->swaymode);
     if (sock == -1) {
-        return 2;
+        goto cleanup;
     }
-    {
-        const char *body = NULL;
-        json_object *tmparray = NULL;
-        if (context->flags & F_PRINTALL && !context->almostall) {
-            body = context->swaymode ? ALL_EVENTS_SUB_JSON_SWAY
-                : ALL_EVENTS_SUB_JSON_I3;
-        } else {
-            tmparray = get_matching_evtypes(
-                 context->matchers, context->matcherc, context->swaymode);
-            if (!json_object_array_length(tmparray)) {
-                fprintf(stderr, ":evtype never matches\n");
-                json_object_put(tmparray);
-                return 2;
-            }
-            body = json_object_to_json_string_ext(
-                tmparray, JSON_C_TO_STRING_PLAIN);
-        }
-        debug_print("body=%s\n", body);
-        int res = i3util_subscribe(sock, body);
-        json_object_put(tmparray);
-        if (res == -1) {
-            fprintf(stderr, "subscribe request failed\n");
-            return 2;
-        }
+    if (start_subscribe(context, sock) == -1) {
+        goto cleanup;
     }
-    int result = eventloop(sock, context);
+
+    result = eventloop(context, sock);
+
+cleanup:
     close(sock);
     return result;
 }

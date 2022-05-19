@@ -386,59 +386,60 @@ static int main_match(struct context *context) {
     string_builder buf = EMPTY_STRING_BUILDER;
     i3_msg msg = EMPTY_I3_MSG;
     json_object *tree = NULL;
+    FILE *f = NULL;
+    int sock = -1;
+    json_tokener *tok = NULL;
+    int result = 2;
     if (context->in_file) {
         FILE *stream = NULL;
-        FILE *f = NULL;
         if (strcmp(context->in_file, "-") == 0) {
             stream = stdin;
         } else {
             f = stream = fopen(context->in_file, "r");
             if (!f) {
                 perror("open");
-                return 2;
+                goto cleanup;
             }
         }
         push_whole_file(&buf, stream);
         if (ferror(stream)) {
-            sb_free(&buf);
-            if (f) fclose(f);
-            return 2;
+            perror("read");
+            goto cleanup;
         }
         if (buf.len == 0) {
             fprintf(stderr, "json input is empty\n");
-            if (f) fclose(f);
-            return 2;
+            goto cleanup;
         }
-        json_tokener *tok = json_tokener_new_ex(JSON_TOKENER_DEPTH);
+        tok = json_tokener_new_ex(JSON_TOKENER_DEPTH);
         malloc_check(tok);
         tree = json_tokener_parse_ex(tok, buf.buf, buf.len);
         if (!tree) {
             jsonutil_print_error("tree parse error", json_tokener_get_error(tok));
-            json_tokener_free(tok);
-            sb_free(&buf);
-            if (f) fclose(f);
-            return 2;
+            goto cleanup;
         }
-        json_tokener_free(tok);
-        if (f) fclose(f);
     } else {
         set_default_sigchld_handler();
-        int sock = i3ipc_open_socket(context->sock_path, context->swaymode);
+        sock = i3ipc_open_socket(context->sock_path, context->swaymode);
         if (sock == -1) {
-            return 2;
+            goto cleanup;
         }
         if (i3util_request_json(sock, I3_IPC_MESSAGE_TYPE_GET_TREE, "", &msg, &tree) == -1) {
-            close(sock);
-            return 2;
+            goto cleanup;
         }
         debug_print("%s\n", "close sock...");
-        close(sock);
     }
+
     i3json_iter_nodes(tree, &iter_pred, context);
+    result = context->matchcount >= context->mincount ? 0 : 1;
+
+cleanup:
+    if (f) fclose(f);
+    if (sock != -1) close(sock);
+    if (tok) json_tokener_free(tok);
     json_object_put(tree);
     del_i3_msg(&msg);
     sb_free(&buf);
-    return context->matchcount >= context->mincount ? 0 : 1;
+    return result;
 }
 
 static int main_subscribe(struct context *context) {

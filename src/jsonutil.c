@@ -68,6 +68,16 @@ extern json_object *jsonutil_path_get(json_object *obj, const char *path) {
     }
 }
 
+extern int jsonutil_object_prop_is_str(json_object *obj, const char *key, const char *str) {
+    json_object *str_obj;
+    if (!json_object_object_get_ex(obj, key, &str_obj)
+        || !json_object_is_type(str_obj, json_type_string)) {
+        return 0;
+    }
+    const char *s = json_object_get_string(str_obj);
+    return s && strcmp(s, str) == 0;
+}
+
 extern void jsonutil_print_error(const char *str, enum json_tokener_error error) {
     const char *error_str = json_tokener_error_desc(error);
     if (!str) error_str = "unknown error";

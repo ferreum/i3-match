@@ -184,14 +184,34 @@ extern int i3json_matcher_cmp_key(i3json_matcher *matcher, const char* key) {
     return r;
 }
 
-static int i3json_is_scratch(json_object *node) {
+static int i3json_is_scratch(json_object *node, json_object *scratch_ids) {
     json_object *obj;
-    if (!json_object_object_get_ex(node, "scratchpad_state", &obj)
-         || !json_object_is_type(obj, json_type_string)) {
-        return 0;
+    if (json_object_object_get_ex(node, "scratchpad_state", &obj)
+        && json_object_is_type(obj, json_type_string)) {
+        const char *state = json_object_get_string(obj);
+        if (state && state[0] && strcmp(state, "none") != 0) {
+            return 1;
+        }
     }
-    const char *state = json_object_get_string(obj);
-    return state && state[0] && strcmp(state, "none") != 0;
+    if (json_object_is_type(scratch_ids, json_type_array)) {
+        int length = json_object_array_length(scratch_ids);
+        json_object *node_id_obj;
+        if (length
+            && json_object_object_get_ex(node, "id", &node_id_obj)
+            && json_object_is_type(node_id_obj, json_type_int)) {
+            int64_t node_id = json_object_get_int64(node_id_obj);
+            int index;
+            for (index = 0; index < length; index++) {
+                json_object *id_obj = json_object_array_get_idx(scratch_ids, index);
+                if (!json_object_is_type(id_obj, json_type_int)) continue;
+                int64_t scratch_id = json_object_get_int64(id_obj);
+                if (scratch_id == node_id) {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
 }
 
 static int is_type(json_object *node, const char *type) {
@@ -221,8 +241,8 @@ do {                                                                \
 #define ACCUM_LEVEL(field, cond, level, prevlevel) \
     ACCUM_DATA(field, cond, level, prevlevel, {}, {})
 
-void i3json_tree_accum_data(json_object *node, iter_info *info, i3json_print_tree_context *context) {
-    ACCUM_LEVEL(context->scratch, i3json_is_scratch(node), info->level, context->prevlevel);
+void i3json_tree_accum_data(json_object *node, json_object *scratch_ids, iter_info *info, struct i3json_print_tree_context *context) {
+    ACCUM_LEVEL(context->scratch, i3json_is_scratch(node, scratch_ids), info->level, context->prevlevel);
     ACCUM_LEVEL(context->floating, info->floating, info->level, context->prevlevel);
     ACCUM_DATA(context->wslevel, is_type(node, "workspace"), info->level, context->prevlevel, {
         json_object *tmp;

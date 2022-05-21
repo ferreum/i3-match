@@ -63,7 +63,7 @@ extern json_object *i3json_matchers_match_tree(json_object *tree, int matcherc, 
 
 extern int i3json_matcher_cmp_key(i3json_matcher *matcher, const char* key);
 
-typedef struct i3json_print_tree_context {
+struct i3json_print_tree_context {
     int prevlevel;
     int scratch;
     int floating;
@@ -71,10 +71,10 @@ typedef struct i3json_print_tree_context {
     const char *ws;
     int outputlevel;
     const char *output;
-} i3json_print_tree_context;
+};
 
 #define I3JSON_EMPTY_PRINT_TREE_CONTEXT {.prevlevel = 0, .scratch = 0, .floating = 0}
 
-extern void i3json_tree_accum_data(json_object *node, iter_info *info, i3json_print_tree_context *context);
+extern void i3json_tree_accum_data(json_object *node, json_object *scratch_ids, iter_info *info, struct i3json_print_tree_context *context);
 
 #endif /* _I3JSON_H_ */

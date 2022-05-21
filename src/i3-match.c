@@ -111,7 +111,7 @@ struct context {
     string_builder itree;
     int objcount;
     int matchcount;
-    i3json_print_tree_context pt_context;
+    struct i3json_print_tree_context pt_context;
     i3_msg *msg;
 };
 
@@ -373,10 +373,48 @@ static json_object *get_matching_evtypes(i3json_matcher *matchers, int matcherc,
     return array;
 }
 
+struct matchmode_iter_pred_args {
+    struct context *context;
+    json_object *scratch_ids;
+};
+
 static iter_advice matchmode_iter_pred(json_object *node, iter_info *info, void *ptr) {
-    struct context *ctx = ptr;
-    i3json_tree_accum_data(node, info, &ctx->pt_context);
+    struct matchmode_iter_pred_args *args = ptr;
+    struct context *ctx = args->context;
+    i3json_tree_accum_data(node, args->scratch_ids, info, &ctx->pt_context);
     return process_node(node, info, ctx);
+}
+
+static json_object *get_scratch_ids(json_object *tree) {
+    if (!jsonutil_object_prop_is_str(tree, "name", "root")
+        || !jsonutil_object_prop_is_str(tree, "type", "root")) {
+        return NULL;
+    }
+    json_object *nodes;
+    if (!json_object_object_get_ex(tree, "nodes", &nodes)
+        || !json_object_is_type(nodes, json_type_array)) {
+        return NULL;
+    }
+    json_object *output_obj = json_object_array_get_idx(nodes, 0);
+    if (!jsonutil_object_prop_is_str(output_obj, "name", "__i3")
+        || !jsonutil_object_prop_is_str(output_obj, "type", "output")) {
+        return NULL;
+    }
+    if (!json_object_object_get_ex(output_obj, "nodes", &nodes)
+        || !json_object_is_type(nodes, json_type_array)) {
+        return NULL;
+    }
+    json_object *workspace_obj = json_object_array_get_idx(nodes, 0);
+    if (!jsonutil_object_prop_is_str(workspace_obj, "name", "__i3_scratch")
+        || !jsonutil_object_prop_is_str(workspace_obj, "type", "workspace")) {
+        return NULL;
+    }
+    json_object *focus_ids;
+    if (!json_object_object_get_ex(workspace_obj, "focus", &focus_ids)
+        || !json_object_is_type(focus_ids, json_type_array)) {
+        return NULL;
+    }
+    return focus_ids;
 }
 
 static int match_mode_main(struct context *context) {
@@ -429,7 +467,11 @@ static int match_mode_main(struct context *context) {
         debug_print("%s\n", "close sock...");
     }
 
-    i3json_iter_nodes(tree, &matchmode_iter_pred, context);
+    struct matchmode_iter_pred_args args = {
+        .context = context,
+        .scratch_ids = get_scratch_ids(tree),
+    };
+    i3json_iter_nodes(tree, &matchmode_iter_pred, &args);
     result = context->matchcount >= context->mincount ? 0 : 1;
 
 cleanup:

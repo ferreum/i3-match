@@ -127,6 +127,10 @@ FIELDS
               1,  if this node's scratchpad_state is not none. Increments by 1
               for each nesting level inside such a node. 0 in subscribe-mode.
 
+              To detect scratch windows on sway(1), containers with ids  found
+              in  the  focus array of the __i3_scratch workspace are also con‐
+              sidered scratch windows.
+
        :workspace
               Name of the workspace containing this node. Empty if  this  node
               is not contained by a workspace. Empty in subscribe-mode.

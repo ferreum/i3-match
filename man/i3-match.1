@@ -183,12 +183,16 @@ Nesting level of this node in i3's layout tree. 0 for the root node.
 0 in subscribe\-mode.
 .TP
 .B :floating
-1, if this node is contained in a floating_nodes array. Increments by 1 for
-each nesting level inside such a node. 0 in subscribe\-mode.
+1, if this node is contained in a \fBfloating_nodes\fR array. Increments by 1
+for each nesting level inside such a node. 0 in subscribe\-mode.
 .TP
 .B :scratch
-1, if this node's scratchpad_state is not none. Increments by 1 for each
+1, if this node's \fBscratchpad_state\fR is not \fBnone\fR. Increments by 1 for each
 nesting level inside such a node. 0 in subscribe\-mode.
+.sp
+To detect scratch windows on \fBsway\fR(1), containers with ids found in the
+\fBfocus\fR array of the \fB__i3_scratch\fR workspace are also considered
+scratch windows.
 .TP
 .B :workspace
 Name of the workspace containing this node. Empty if this node is not

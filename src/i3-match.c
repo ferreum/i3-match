@@ -13,8 +13,10 @@
 #include "sb.h"
 
 #include <json-c/json_tokener.h>
+#include <json-c/json_util.h>
 
 #include <assert.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -421,38 +423,26 @@ static int match_mode_main(struct context *context) {
     if (context->outmode == OUT_NONE) {
         context->maxcount = context->mincount;
     }
-    string_builder buf = EMPTY_STRING_BUILDER;
     i3_msg msg = EMPTY_I3_MSG;
     json_object *tree = NULL;
-    FILE *f = NULL;
+    int close_fd = -1;
     int sock = -1;
-    json_tokener *tok = NULL;
     int result = 2;
     if (context->in_file) {
-        FILE *stream = NULL;
+        int fd = -1;
         if (strcmp(context->in_file, "-") == 0) {
-            stream = stdin;
+            fd = 0;
         } else {
-            f = stream = fopen(context->in_file, "r");
-            if (!f) {
+            close_fd = fd = open(context->in_file, O_RDONLY);
+            if (fd == -1) {
                 perror("open");
                 goto cleanup;
             }
         }
-        push_whole_file(&buf, stream);
-        if (ferror(stream)) {
-            perror("read");
-            goto cleanup;
-        }
-        if (buf.len == 0) {
-            fprintf(stderr, "json input is empty\n");
-            goto cleanup;
-        }
-        tok = json_tokener_new_ex(JSON_TOKENER_DEPTH);
-        malloc_check(tok);
-        tree = json_tokener_parse_ex(tok, buf.buf, buf.len);
-        if (!tree) {
-            jsonutil_print_error("tree parse error", json_tokener_get_error(tok));
+        tree = json_object_from_fd(fd);
+        const char *err = json_util_get_last_err();
+        if (err) {
+            fprintf(stderr, "tree parse error: %s", err);
             goto cleanup;
         }
     } else {
@@ -475,12 +465,14 @@ static int match_mode_main(struct context *context) {
     result = context->matchcount >= context->mincount ? 0 : 1;
 
 cleanup:
-    if (f) fclose(f);
+    if (close_fd != -1) {
+        if (close(close_fd) == -1) {
+            perror("close");
+        }
+    }
     if (sock != -1) close(sock);
-    if (tok) json_tokener_free(tok);
     json_object_put(tree);
     del_i3_msg(&msg);
-    sb_free(&buf);
     return result;
 }
 

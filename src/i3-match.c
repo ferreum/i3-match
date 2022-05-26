@@ -431,7 +431,7 @@ static int match_mode_main(struct context *context) {
     if (context->in_file) {
         int fd = -1;
         if (strcmp(context->in_file, "-") == 0) {
-            fd = 0;
+            fd = STDIN_FILENO;
         } else {
             close_fd = fd = open(context->in_file, O_RDONLY);
             if (fd == -1) {

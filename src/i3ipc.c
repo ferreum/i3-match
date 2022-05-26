@@ -104,7 +104,6 @@ int i3ipc_open_socket(const char *path, int swaymode) {
         return -1;
     }
 
-    struct sockaddr_un remote;
     int s;
     if ((s = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
         perror("socket");
@@ -114,11 +113,12 @@ int i3ipc_open_socket(const char *path, int swaymode) {
 
     debug_print("%s\n", "trying to connect...");
 
-    remote.sun_family = AF_UNIX;
-    strncpy(remote.sun_path, path, sizeof(remote.sun_path));
-    remote.sun_path[sizeof(remote.sun_path) - 1] = '\0';
-    socklen_t len = strlen(path) + sizeof(remote.sun_family);
-    if (connect(s, (struct sockaddr *)&remote, len) == -1) {
+    struct sockaddr_un addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, path, sizeof(addr.sun_path) - 1);
+
+    if (connect(s, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
         perror("connect");
         close(s);
         free(a_path);

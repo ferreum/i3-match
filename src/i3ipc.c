@@ -30,6 +30,7 @@ static char *i3ipc_get_cmd_sockpath(int swaymode) {
         perror("pipe");
         return NULL;
     }
+    char *result = NULL;
     switch (fork()) {
     case -1:
         perror("fork");
@@ -49,16 +50,26 @@ static char *i3ipc_get_cmd_sockpath(int swaymode) {
     }
     default: {
         close(fd_p[1]);
-        FILE *f = fdopen(fd_p[0], "r");
-        if (!f) {
-            perror("fdopen");
-            abort();
+        char buf[BUFSIZ];
+        ssize_t n;
+        if ((n = read(fd_p[0], buf, BUFSIZ - 1)) == -1) {
+            perror("read");
+            goto cleanup;
         }
-        char *line = read_line(f);
-        fclose(f);
-        return line;
+        buf[n] = '\0';
+        char *end = strchr(buf, '\n');
+        if (end) *end = '\0';
+
+        size_t size = strlen(buf) + 1;
+        char *str = malloc(size);
+        malloc_check(str);
+        memcpy(str, buf, size);
+        result = str;
     }
     }
+cleanup:
+    close(fd_p[0]);
+    return result;
 }
 
 static const char *i3ipc_get_sockpath(char **a_path, int swaymode) {

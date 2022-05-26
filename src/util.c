@@ -1,10 +1,5 @@
-
 #include "util.h"
-#include "base.h"
-#include "debug.h"
 
-#include <stdlib.h>
-#include <string.h>
 #include <signal.h>
 #include <sys/wait.h>
 
@@ -14,27 +9,6 @@ static void signal_child(__unused int sig) {
 
 extern void set_default_sigchld_handler(void) {
     signal(SIGCHLD, &signal_child);
-}
-
-extern char *read_line(FILE *f) {
-    char buf[BUFSIZ];
-    int len = 0;
-    char *line = NULL;
-    while (!feof(f) && !ferror(f) && fgets(buf, BUFSIZ, f)) {
-        size_t l = strlen(buf);
-        if (buf[l-1] == '\n') {
-            l -= 1;
-        }
-        line = realloc(line, len + l + 1);
-        malloc_check(line);
-        strncpy(line + len, buf, l);
-        len += l;
-        if (l < BUFSIZ-1) {
-            break;
-        }
-    }
-    if (line) line[len] = '\0';
-    return line;
 }
 
 extern void push_whole_file(string_builder *sb, FILE *f) {

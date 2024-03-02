@@ -50,7 +50,7 @@
 #define CH_BAR '|'
 
 const char *ALL_EVENTS_SUB_JSON_I3 = "[\"workspace\",\"output\",\"mode\",\"window\",\"barconfig_update\",\"binding\",\"shutdown\",\"tick\"]";
-const char *ALL_EVENTS_SUB_JSON_SWAY = "[\"workspace\",\"mode\",\"window\",\"barconfig_update\",\"binding\",\"shutdown\",\"tick\",\"bar_state_update\",\"input\"]";
+const char *ALL_EVENTS_SUB_JSON_SWAY = "[\"workspace\",\"output\",\"mode\",\"window\",\"barconfig_update\",\"binding\",\"shutdown\",\"tick\",\"bar_state_update\",\"input\"]";
 
 #define EVENT_TYPE_COUNT 8
 const char *EVENT_NAMES[EVENT_TYPE_COUNT] = {
@@ -358,13 +358,9 @@ static json_object *get_matching_evtypes(i3json_matcher *matchers, int matcherc,
     json_object *array = json_object_new_array();
     malloc_check(array);
     for (i = 0; i < EVENT_TYPE_COUNT + EVENT_TYPE_SWAY_COUNT; i++) {
-        if (swaymode) {
-            // no output events on sway
-            if (i == 1) continue;
-        } else {
-            // no sway events on i3
-            if (i >= EVENT_TYPE_COUNT) break;
-        }
+        // no sway events on i3
+        if (!swaymode && i >= EVENT_TYPE_COUNT) break;
+
         const char *name = i < EVENT_TYPE_COUNT ? EVENT_NAMES[i]
              : EVENT_NAMES_SWAY[i - EVENT_TYPE_COUNT];
         if (match_evtype_only(matchers, matcherc, name)) {
@@ -558,7 +554,7 @@ int main(int argc, char *argv[]) {
     } else {
         const char *env_swaysock = getenv("SWAYSOCK");
         if (env_swaysock && *env_swaysock) {
-             context.swaymode = 1;
+            context.swaymode = 1;
         }
     }
 

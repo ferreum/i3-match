@@ -159,8 +159,9 @@ FIELDS
               Event type in subscribe-mode. One of  workspace,  output,  mode,
               window, barconfig_update, binding, shutdown, tick.
 
-              In  sway mode, one of workspace, mode, window, barconfig_update,
-              binding, shutdown, tick, bar_state_update, input.
+              In  sway  mode,  one  of  workspace,   output,   mode,   window,
+              barconfig_update,  binding,  shutdown,  tick,  bar_state_update,
+              input.
 
               This field is special when used in  filters  in  subscribe-mode:
               Filters  on  this  field are used to decide which events to sub‐

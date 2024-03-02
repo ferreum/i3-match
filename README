@@ -12,10 +12,10 @@ DESCRIPTION
        i3-match provides command-line access to i3 window manager's IPC inter‐
        face. Also works with sway(1); See SWAY MODE below and sway-ipc(7).
 
-       i3-match has two modes of operation: match-mode and subscribe-mode.  In
+       i3-match  has two modes of operation: match-mode and subscribe-mode. In
        both modes, filters are used to select nodes.
 
-       Match-mode  is  the  default, where nodes are containers/windows in the
+       Match-mode is the default, where nodes are  containers/windows  in  the
        tree.
 
        The -S option enables subscribe-mode, where i3-match listens for events
@@ -30,8 +30,8 @@ OPTIONS
               option.
 
        -a     Print unmatched nodes too. Output the :match field or specify -h
-              to  highlight  matches.   If  specified  twice in subscribe mode
-              ("almost all"), events not  matching  filters  for  the  :evtype
+              to highlight matches.  If  specified  twice  in  subscribe  mode
+              ("almost  all"),  events  not  matching  filters for the :evtype
               field are left out.
 
        -d delimiter
@@ -47,15 +47,15 @@ OPTIONS
               Read json tree from file instead of querying via i3 IPC. If file
               is a single dash ("-") read from stdin. Match-mode only.
 
-       -l num Consider  success  after  num  matches. Default is 1. Match-mode
+       -l num Consider success after num matches.  Default  is  1.  Match-mode
               only (see also -n).
 
-       -m     Keep monitoring for events infinitely. Specifying -n after  this
-              option  overrides  this  effect.  Sets printed fields to :evtype
-              change current/name container/name binding/command  payload  in‐
-              put/identifier id unless -o is given.  Subscribe-mode only.
+       -m     Keep  monitoring for events infinitely. Specifying -n after this
+              option overrides this effect. Sets  printed  fields  to  :evtype
+              change   current/name   container/name  binding/command  payload
+              input/identifier id unless -o is given.  Subscribe-mode only.
 
-       -n num In  match-mode:  Exit  after  printing  num  nodes. If no output
+       -n num In match-mode: Exit after  printing  num  nodes.  If  no  output
               fields are selected, this option is ignored (you may want -l in‐
               stead).  In subscribe-mode: exit after matching num nodes.
 
@@ -97,49 +97,49 @@ FILTERS
 
 FIELDS
        Fields contain values for each node. They are accessed via their  names
-       in the json-structure of each node.
+       in the json structure of each node.
 
        Hierarchies of json objects are accessed using slashes ("/") as separa‐
        tor.
 
-       Fields not found for a node are empty. There is no check for whether  a
+       Fields  not found for a node are empty. There is no check for whether a
        field name is valid.
 
        See  i3  IPC  documentation  (https://i3wm.org/docs/ipc.html)  and  the
        EVENTS section in sway-ipc(7) for a list of fields.
 
    Pseudo fields
-       i3-match provides additional information for each  node.  Pseudo-fields
+       i3-match  provides  additional information for each node. Pseudo-fields
        access this information. All pseudo-fields start with colon (":").
 
-       :match 1,  if  this node is a match. 0 otherwise. 0 when used in a fil‐
+       :match 1, if this node is a match. 0 otherwise. 0 when used in  a  fil‐
               ter.
 
-       :level Nesting level of this node in i3's layout tree. 0 for  the  root
+       :level Nesting  level  of this node in i3's layout tree. 0 for the root
               node.  0 in subscribe-mode.
 
        :floating
-              1,  if  this node is contained in a floating_nodes array. Incre‐
-              ments by 1 for each nesting level inside such a node. 0 in  sub‐
-              scribe-mode.
+              1, if this node is contained in a floating_nodes  array.  Incre‐
+              ments  by  1  for  each  nesting  level inside such a node. 0 in
+              subscribe-mode.
 
        :scratch
-              1,  if this node's scratchpad_state is not none. Increments by 1
+              1, if this node's scratchpad_state is not none. Increments by  1
               for each nesting level inside such a node. 0 in subscribe-mode.
 
-              To detect scratch windows on sway(1), containers with ids  found
-              in  the  focus array of the __i3_scratch workspace are also con‐
+              To  detect scratch windows on sway(1), containers with ids found
+              in the focus array of the __i3_scratch workspace are  also  con‐
               sidered scratch windows.
 
        :workspace
-              Name of the workspace containing this node. Empty if  this  node
+              Name  of  the workspace containing this node. Empty if this node
               is not contained by a workspace. Empty in subscribe-mode.
 
        :output
-              Name  of the output (screen) containing this node. Empty if this
+              Name of the output (screen) containing this node. Empty if  this
               node is not contained by an output. Empty in subscribe-mode.
 
-       :sibi  Index of this node within the current list of  siblings.   0  in
+       :sibi  Index  of  this  node within the current list of siblings.  0 in
               subscribe-mode.
 
        :sibc  Number of siblings of this node. 0 in subscribe-mode.
@@ -148,15 +148,15 @@ FIELDS
               Number of children of this node. 0 in subscribe-mode.
 
        :indent
-              Outputs  an  indented hierarchy tree. Matched nodes are indented
-              with two dashes ("--") other nodes with two spaces  ("   ")  per
+              Outputs an indented hierarchy tree. Matched nodes  are  indented
+              with  two  dashes  ("--") other nodes with two spaces ("  ") per
               level. Only useful in match-mode.
 
-       :itree Outputs  an indented hierarchy resembling the output of tree(1).
+       :itree Outputs an indented hierarchy resembling the output of  tree(1).
               Only useful in match-mode.
 
        :evtype
-              Event type in subscribe-mode. One of  workspace,  output,  mode,
+              Event  type  in  subscribe-mode. One of workspace, output, mode,
               window, barconfig_update, binding, shutdown, tick.
 
               In  sway  mode,  one  of  workspace,   output,   mode,   window,
@@ -168,7 +168,7 @@ FIELDS
               scribe for. This is an optimization and only makes a visual dif‐
               ference when specifying -a twice.
 
-              If  filters  are  specified  such  that  no  event  types match,
+              If filters  are  specified  such  that  no  event  types  match,
               i3-match exits with an error message.
 
               none in match-mode.
@@ -176,32 +176,32 @@ FIELDS
        :nodei Index of this node.
 
        :matchc
-              Number of matches up to this point. This is incremented after  a
+              Number  of matches up to this point. This is incremented after a
               node is matched and before processing output.
 
        :json  Json representation of this node formatted without newlines.
 
        :json:field
-              Json  representation  of  field  formatted without newlines. See
+              Json representation of field  formatted  without  newlines.  See
               FIELDS above for field.  Pseudo fields are not available here.
 
 ENVIRONMENT VARIABLES
-       I3SOCK If not in sway mode and -s is not given, this variable  is  used
-              to  determine  the path of i3's IPC socket, overriding the usual
+       I3SOCK If  not  in sway mode and -s is not given, this variable is used
+              to determine the path of i3's IPC socket, overriding  the  usual
               lookup.
 
        SWAYSOCK
-              If set to a non-empty value and the -I option is not  specified,
+              If  set to a non-empty value and the -I option is not specified,
               sway mode is enabled.
 
-              In  sway mode, this variable is used instead of I3SOCK. See SWAY
+              In sway mode, this variable is used instead of I3SOCK. See  SWAY
               MODE blow.
 
 EXIT STATUS
        The exit status is 0 on success, 1 if success condition was not met and
        2  if an error occurred.  In match-mode success means that at least one
        node was selected. If -l was specified, the exit status is according to
-       that  option.  In subscribe-mode i3-match exits on success, so the exit
+       that option.  In subscribe-mode i3-match exits on success, so the  exit
        status is always 0 unless an error occurred.
 
 SWAY MODE
@@ -219,21 +219,21 @@ SWAY MODE
            The  SWAYSOCK  environment variable is used to find the socket path
            instead of I3SOCK. See ENVIRONMENT VARIABLES above.
 
-           The command sway --get-socketpath is used instead of i3 --get-sock‐
-           etpath as the last resort method to find the socket path. Note that
-           since sway also uses the SWAYSOCK environment variable,  this  will
-           likely fail, as of sway version 1.7.
+           The  command  sway  --get-socketpath  is   used   instead   of   i3
+           --get-socketpath as the last resort method to find the socket path.
+           Note  that  since sway also uses the SWAYSOCK environment variable,
+           this will likely fail, as of sway version 1.7.
 
 EXAMPLES
        i3-match -t
               Print a simple hierarchy tree with names for each container.
 
        i3-match 'name*=Firefox' -l 2 && echo true
-              Print  "true" when there are at least two containers with titles
+              Print "true" when there are at least two containers with  titles
               containing "Firefox".
 
        i3-match focused=true -a -h -o :itree rect/{width,height} name
-              Print width, height and title for  each  window  and  container.
+              Print  width,  height  and  title for each window and container.
               Highlight the focused window.
 
        i3-match focused=true -ahto rect/{width,height} name
@@ -248,4 +248,4 @@ EXAMPLES
 SEE ALSO
        i3(1) sway(1) sway-ipc(7)
 
-i3-match                          2022-05-11                       I3-MATCH(1)
+i3-match                          2024-03-02                       I3-MATCH(1)
